@@ -179,7 +179,15 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
 
-    if (error?.response?.status !== 401 || originalRequest?._retry) {
+    const status = error?.response?.status;
+    const message = error?.response?.data?.message || "";
+    
+    const isTokenExpired = 
+      status === 401 || 
+      message.toLowerCase().includes("jwt expired") ||
+      message.toLowerCase().includes("token expired");
+
+    if (!isTokenExpired || originalRequest?._retry) {
       return Promise.reject(error);
     }
 
@@ -205,7 +213,7 @@ api.interceptors.response.use(
 
 
     try {
-      const refreshResponse = await refreshClient.post("/api/auth/refresh");
+      const refreshResponse = await refreshClient.post("/api/auth/refresh", {});
 
 
       const newAccessToken = refreshResponse.data.data.accessToken;
