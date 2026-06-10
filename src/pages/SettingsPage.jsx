@@ -63,7 +63,7 @@ function SettingsPage() {
               description="View daily sales, net profits, payment split, and top selling items across all registers."
               icon="📊"
               tags={["Today's Sales", "Orders", "Cash/UPI"]}
-              onClick={() => {}}
+              onClick={() => navigate("/sales-sessions?next=business-report")}
             />
 
             <SettingsCard
@@ -71,7 +71,7 @@ function SettingsPage() {
   description="Review order and sales summaries for full accountability."
   icon="🧾"
   tags={["Open", "Completed", "Due", "Cancelled"]}
-  onClick={() => navigate("/summary")}
+  onClick={() => navigate("/sales-sessions?next=summary")}
 />
 
             <SettingsCard
