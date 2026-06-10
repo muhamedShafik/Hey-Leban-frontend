@@ -106,7 +106,7 @@ function POSPage() {
 
   const cartItems = useMemo(() => getCartItems(), [products, getCartItems]);
   const subtotal = useMemo(() => getSubtotal(), [products, getSubtotal]);
-  const total = useMemo(() => getTotal(), [products, getTotal]);
+  const total = useMemo(() => getTotal(), [products,discountAmount, getTotal]);
 
   useEffect(() => {
     if (lastSavedOrder?.id) {
