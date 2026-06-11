@@ -101,7 +101,7 @@ import { useAuthStore } from "../store/authStore";
 
 
 const API_BASE_URL =
-   "https://pedagogically-sensationless-lanell.ngrok-free.dev";
+   "https://hey-leban.vercel.app";
 
 
 const api = axios.create({
