@@ -49,12 +49,12 @@ function OrderDetailsPanel({
   actionLoading,
 }) {
   if (loading) {
-    return <div className="h-96 animate-pulse rounded-2xl bg-white" />;
+    return <div className="h-[calc(100vh-260px)] animate-pulse rounded-2xl bg-white" />;
   }
 
   if (!order) {
     return (
-      <div className="rounded-2xl border border-dashed border-[#ded9d3] bg-white p-8 text-center text-[#3d0c02]/50">
+      <div className="h-[calc(100vh-260px)] rounded-2xl border border-dashed border-[#ded9d3] bg-white p-8 flex items-center justify-center text-[#3d0c02]/50">
         Select an order to view details.
       </div>
     );
@@ -72,7 +72,7 @@ function OrderDetailsPanel({
     : "Print KOT";
 
   return (
-    <div className="sticky top-6 rounded-2xl border border-[#ded9d3] bg-white p-5 shadow-sm">
+    <div className="sticky top-6 h-[calc(100vh-260px)] overflow-y-auto rounded-2xl border border-[#ded9d3] bg-white p-5 shadow-sm">
       <div className="border-b border-[#ded9d3] pb-4">
         <h2 className="text-2xl font-extrabold">{order.orderNo}</h2>
         <p className="mt-1 text-sm text-[#54433f]">Token #{order.tokenNo}</p>
