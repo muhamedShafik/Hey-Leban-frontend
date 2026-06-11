@@ -12,6 +12,7 @@ import { createOrderPayment } from "../services/paymentService";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDebouncedValue } from "../hooks/orders/useDebouncedValue";
 import { useTicketSearchQuery } from "../hooks/orders/useTicketSearchQuery";
+import { useOrdersQuery } from "../hooks/orders/useOrdersQuery";
 import OrdersSearchDropdown from "../components/orders/OrdersSearchDropdown";
 import { printBoth } from "../utils/printHelpers";
 
@@ -484,21 +485,32 @@ function POSPage() {
   const [orderSearch, setOrderSearch] = useState("");
   const [kotSearch, setKotSearch] = useState("");
 
+  const dueOrdersQuery = useOrdersQuery(
+    { status: "DUE", limit: 1 },
+    { staleTime: 30000, refetchInterval: 30000 }
+  );
+  const openOrdersQuery = useOrdersQuery(
+    { status: "OPEN", limit: 1 },
+    { staleTime: 30000, refetchInterval: 30000 }
+  );
+
+  const dueOrdersCount = dueOrdersQuery.data?.pagination?.total || 0;
+  const openOrdersCount = openOrdersQuery.data?.pagination?.total || 0;
+  const unpaidCount = dueOrdersCount + openOrdersCount;
+
   const debouncedOrder = useDebouncedValue(orderSearch, 300);
   const debouncedKot = useDebouncedValue(kotSearch, 300);
 
-  const normalizedOrderQuery = debouncedOrder
-    .trim()
-    .toUpperCase()
-    .startsWith("ORD-")
-    ? debouncedOrder.trim().toUpperCase()
+  const normalizedOrderQuery = debouncedOrder.trim()
+    ? (debouncedOrder.trim().toUpperCase().startsWith("ORD-")
+        ? debouncedOrder.trim().toUpperCase()
+        : `ORD-${debouncedOrder.trim().toUpperCase()}`)
     : "";
 
-  const normalizedKotQuery = debouncedKot
-    .trim()
-    .toUpperCase()
-    .startsWith("KOT-")
-    ? debouncedKot.trim().toUpperCase()
+  const normalizedKotQuery = debouncedKot.trim()
+    ? (debouncedKot.trim().toUpperCase().startsWith("KOT-")
+        ? debouncedKot.trim().toUpperCase()
+        : `KOT-${debouncedKot.trim().toUpperCase()}`)
     : "";
 
   const orderSearchQuery = useTicketSearchQuery(
@@ -659,9 +671,21 @@ function POSPage() {
             <button
               type="button"
               onClick={goToOrdersPage}
-              className="rounded-lg border border-white/30 px-6 py-2 text-sm font-bold"
+              className="relative rounded-lg border border-white/30 px-6 py-2 text-sm font-bold"
             >
               Orders
+              <div className="absolute -right-2 -top-2 flex h-5 min-w-[20px] items-center justify-center">
+                {unpaidCount > 0 && (
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                )}
+                <span
+                  className={`relative inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold text-white shadow-sm ring-2 ring-[#3d0c02] ${
+                    unpaidCount > 0 ? "bg-red-500" : "bg-gray-500"
+                  }`}
+                >
+                  {unpaidCount}
+                </span>
+              </div>
             </button>
           </div>
         </header>
