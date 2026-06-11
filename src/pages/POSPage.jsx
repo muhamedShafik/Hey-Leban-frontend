@@ -1,5 +1,5 @@
 // src/pages/POSPage.jsx
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useDeferredValue, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import PaymentModal from "../components/pos/PaymentModal";
@@ -14,6 +14,84 @@ import { useDebouncedValue } from "../hooks/orders/useDebouncedValue";
 import { useTicketSearchQuery } from "../hooks/orders/useTicketSearchQuery";
 import OrdersSearchDropdown from "../components/orders/OrdersSearchDropdown";
 import { printBoth } from "../utils/printHelpers";
+
+const formatMoney = (value) => {
+  const numeric = Number(value || 0);
+  return numeric.toFixed(2);
+};
+
+const ProductCard = memo(({ product, quantity, onAdd }) => {
+  return (
+    <button
+      type="button"
+      onClick={() => onAdd(product.id, product)}
+      className="relative flex aspect-square flex-col items-center justify-center gap-4 rounded-2xl bg-white p-6 text-center shadow-[0_4px_12px_rgba(61,12,2,0.08)] active:scale-[0.97]"
+    >
+      {quantity > 0 && (
+        <div className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-[#E8A020] text-sm font-bold text-white">
+          {quantity}
+        </div>
+      )}
+      <div>
+        <h3 className="text-lg font-bold leading-tight">
+          {product.name}
+        </h3>
+        {product.description && (
+          <p className="mt-1 text-xs text-[#3d0c02]/50">
+            {product.description}
+          </p>
+        )}
+        <p className="mt-2 font-bold text-[#E8A020]">
+          ₹{formatMoney(product.price)}
+        </p>
+      </div>
+    </button>
+  );
+});
+
+const CartItemCard = memo(({ item, onIncrease, onDecrease }) => {
+  return (
+    <div className="rounded-xl border border-[#ded9d3] bg-white p-3 shadow-[0_2px_8px_rgba(61,12,2,0.06)]">
+      <div className="mb-2 flex items-start justify-between">
+        <div>
+          <h4 className="text-sm font-bold leading-tight">
+            {item.name}
+          </h4>
+          {item.description ? (
+            <p className="mt-0.5 text-xs text-gray-500">
+              {item.description}
+            </p>
+          ) : null}
+        </div>
+        <span className="text-sm font-bold">
+          ₹{formatMoney(item.total)}
+        </span>
+      </div>
+
+      <div className="flex justify-end">
+        <div className="flex items-center gap-3 rounded-lg border border-[#ded9d3] bg-[#fef9f2] p-1">
+          <button
+            type="button"
+            onClick={() => onDecrease(item.id)}
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-[#ded9d3] bg-white text-sm"
+          >
+            −
+          </button>
+          <span className="w-5 text-center text-base font-bold">
+            {item.quantity}
+          </span>
+          <button
+            type="button"
+            onClick={() => onIncrease(item.id)}
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-[#ded9d3] bg-white text-sm"
+          >
+            +
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 function POSPage() {
   const navigate = useNavigate();
@@ -32,6 +110,7 @@ function POSPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const [showDiscountEditor, setShowDiscountEditor] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
@@ -129,7 +208,7 @@ function POSPage() {
   );
 
   const visibleProducts = useMemo(() => {
-    const normalizedSearch = searchQuery.trim().toLowerCase();
+    const normalizedSearch = deferredSearchQuery.trim().toLowerCase();
 
     const selectedCategory = visibleCategories.find(
       (category) => category.id === selectedCategoryId,
@@ -144,7 +223,7 @@ function POSPage() {
         .filter(Boolean)
         .some((value) => value.toLowerCase().includes(normalizedSearch));
     });
-  }, [visibleCategories, selectedCategoryId, searchQuery]);
+  }, [visibleCategories, selectedCategoryId, deferredSearchQuery]);
 
   const cartQtyMap = useMemo(() => {
     const map = {};
@@ -158,10 +237,7 @@ function POSPage() {
     return cartItems.reduce((sum, item) => sum + item.quantity, 0);
   }, [cartItems]);
 
-  const formatMoney = (value) => {
-    const numeric = Number(value || 0);
-    return numeric.toFixed(2);
-  };
+
 
   const showToast = ({ type = "success", title, message }) => {
     setToast({
@@ -654,31 +730,12 @@ function POSPage() {
 
               {!isLoading &&
                 visibleProducts.map((product) => (
-                  <button
-                    type="button"
+                  <ProductCard
                     key={product.id}
-                    onClick={() => addToCart(product.id, product)}
-                    className="relative flex aspect-square flex-col items-center justify-center gap-4 rounded-2xl bg-white p-6 text-center shadow-[0_4px_12px_rgba(61,12,2,0.08)] active:scale-[0.97]"
-                  >
-                    {cartQtyMap[product.id] > 0 && (
-                      <div className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-[#E8A020] text-sm font-bold text-white">
-                        {cartQtyMap[product.id]}
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="text-lg font-bold leading-tight">
-                        {product.name}
-                      </h3>
-                      {product.description && (
-                        <p className="mt-1 text-xs text-[#3d0c02]/50">
-                          {product.description}
-                        </p>
-                      )}
-                      <p className="mt-2 font-bold text-[#E8A020]">
-                        ₹{formatMoney(product.price)}
-                      </p>
-                    </div>
-                  </button>
+                    product={product}
+                    quantity={cartQtyMap[product.id] || 0}
+                    onAdd={addToCart}
+                  />
                 ))}
             </div>
           </section>
@@ -768,48 +825,12 @@ function POSPage() {
                 </div>
               ) : (
                 cartItems.map((item) => (
-                  <div
+                  <CartItemCard
                     key={item.id}
-                    className="rounded-xl border border-[#ded9d3] bg-white p-3 shadow-[0_2px_8px_rgba(61,12,2,0.06)]"
-                  >
-                    <div className="mb-2 flex items-start justify-between">
-                      <div>
-                        <h4 className="text-sm font-bold leading-tight">
-                          {item.name}
-                        </h4>
-                        {item.description ? (
-                          <p className="mt-0.5 text-xs text-gray-500">
-                            {item.description}
-                          </p>
-                        ) : null}
-                      </div>
-                      <span className="text-sm font-bold">
-                        ₹{formatMoney(item.total)}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-end">
-                      <div className="flex items-center gap-3 rounded-lg border border-[#ded9d3] bg-[#fef9f2] p-1">
-                        <button
-                          type="button"
-                          onClick={() => decreaseQty(item.id)}
-                          className="flex h-7 w-7 items-center justify-center rounded-md border border-[#ded9d3] bg-white text-sm"
-                        >
-                          −
-                        </button>
-                        <span className="w-5 text-center text-base font-bold">
-                          {item.quantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => increaseQty(item.id)}
-                          className="flex h-7 w-7 items-center justify-center rounded-md border border-[#ded9d3] bg-white text-sm"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                    item={item}
+                    onIncrease={increaseQty}
+                    onDecrease={decreaseQty}
+                  />
                 ))
               )}
             </div>
