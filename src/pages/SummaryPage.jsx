@@ -1,77 +1,79 @@
-import { useNavigate } from "react-router-dom";
-import ReportHeader from "../components/reports/ReportHeader";
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import ReportStatCards from "../components/reports/ReportStatCards";
 import RevenueSection from "../components/reports/RevenueSection";
 import PaymentsSection from "../components/reports/PaymentsSection";
 import OrdersTable from "../components/reports/OrdersTable";
-import useSummaryFilters from "../hooks/reports/useSummaryFilters";
-import useOverviewQuery from "../hooks/reports/useOverviewQuery";
+import useSalesSummaryQuery from "../hooks/reports/useSalesSummaryQuery";
 import useReportOrdersQuery from "../hooks/reports/useReportOrdersQuery";
 
 export default function SummaryPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const sessionId = queryParams.get("sessionId");
+  const startDate = queryParams.get("startDate");
+  const endDate = queryParams.get("endDate");
+
+  const [page, setPage] = useState(1);
 
   const {
-    today,
-    filter,
-    customStart,
-    customEnd,
-    customError,
-    page,
-    setPage,
-    setCustomStart,
-    setCustomEnd,
-    applyCustomRange,
-    setPresetFilter,
-  } = useSummaryFilters();
+    data: summaryData,
+    isLoading: summaryLoading,
+    isError: summaryError,
+    error: summaryQueryError,
+  } = useSalesSummaryQuery({ sessionId, startDate, endDate });
 
-  const {
-    data: overview,
-    isLoading: overviewLoading,
-    isError: overviewError,
-    error: overviewQueryError,
-  } = useOverviewQuery(filter);
+  const filterForOrders = { sessionId, startDate, endDate, type: "custom" };
 
   const {
     data: ordersData,
     isLoading: ordersLoading,
     isError: ordersError,
     error: ordersQueryError,
-  } = useReportOrdersQuery(filter, page, 20);
+  } = useReportOrdersQuery(filterForOrders, page, 20);
 
-  const orders = overview?.orders;
-  const payments = overview?.payments;
+  const orders = summaryData?.orders;
+  const payments = summaryData?.payments;
   const orderRows = ordersData?.orders ?? [];
   const pagination = ordersData?.pagination;
 
+  const displayDate = sessionId 
+    ? `Session: ${sessionId.slice(-6).toUpperCase()}` 
+    : (startDate && endDate) ? `${startDate} to ${endDate}` : "Summary";
+
   return (
     <div className="min-h-screen bg-[#fef9f2] font-sans text-[#1d1c18]">
-      <ReportHeader
-        navigate={navigate}
-        filter={filter}
-        today={today}
-        customStart={customStart}
-        customEnd={customEnd}
-        setCustomStart={setCustomStart}
-        setCustomEnd={setCustomEnd}
-        applyCustomRange={applyCustomRange}
-        setPresetFilter={setPresetFilter}
-      />
+      <header className="fixed left-0 top-0 z-50 flex h-[80px] w-full items-center justify-between bg-[#3d0c02] px-4 text-white shadow-md md:px-6">
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="flex h-12 w-12 items-center justify-center rounded-full transition hover:bg-white/10"
+            aria-label="Back"
+          >
+            <span className="text-[28px]">←</span>
+          </button>
+
+          <div className="flex flex-col">
+            <h1 className="text-[24px] font-bold leading-tight text-white">
+              Summary
+            </h1>
+            <p className="text-[13px] font-semibold text-white/60">
+              {displayDate}
+            </p>
+          </div>
+        </div>
+      </header>
 
       <main className="min-h-screen px-4 pb-10 pt-[96px] md:px-6">
         <div className="mx-auto max-w-6xl">
-          {customError && (
-            <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-[12px] text-red-700">
-              {customError}
-            </p>
-          )}
-
           <section className="mb-6">
             <h2 className="mb-3 text-[13px] font-bold uppercase tracking-widest text-[#54433f]/60">
               Orders
             </h2>
 
-            {overviewLoading ? (
+            {summaryLoading ? (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
                 {[...Array(4)].map((_, i) => (
                   <div
@@ -84,22 +86,22 @@ export default function SummaryPage() {
                   </div>
                 ))}
               </div>
-            ) : overviewError ? (
+            ) : summaryError ? (
               <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
-                {overviewQueryError?.response?.data?.message ||
-                  overviewQueryError?.message ||
-                  "Failed to load overview."}
+                {summaryQueryError?.response?.data?.message ||
+                  summaryQueryError?.message ||
+                  "Failed to load summary."}
               </p>
             ) : (
               <ReportStatCards orders={orders} />
             )}
           </section>
 
-          {!overviewLoading && !overviewError && (
+          {!summaryLoading && !summaryError && (
             <RevenueSection orders={orders} />
           )}
 
-          {!overviewLoading && !overviewError && (
+          {!summaryLoading && !summaryError && (
             <PaymentsSection payments={payments} navigate={navigate} />
           )}
 

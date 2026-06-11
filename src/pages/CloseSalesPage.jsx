@@ -23,7 +23,17 @@ function CloseSalesPage() {
   ]);
   const [confirmed, setConfirmed] = useState(false);
   const [closeLoading, setCloseLoading] = useState(false);
-  const [closeError, setCloseError] = useState("");
+  
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  const showToast = (type, title, message) =>
+    setToast({ id: Date.now(), type, title, message });
 
   useEffect(() => {
     const fetchOverview = async () => {
@@ -31,7 +41,9 @@ function CloseSalesPage() {
         const data = await getSalesSessionOverview("current");
         setOverview(data);
       } catch (err) {
-        setOverviewError(err?.response?.data?.message || "Failed to load session overview.");
+        const msg = err?.response?.data?.message || "Failed to load session overview.";
+        setOverviewError(msg);
+        showToast("error", "Data Error", msg);
       } finally {
         setOverviewLoading(false);
       }
@@ -85,10 +97,9 @@ function CloseSalesPage() {
 
   const handleClose = async () => {
     if (!confirmed) {
-      setCloseError("Please confirm the checkbox before closing.");
+      showToast("error", "Action Required", "Please confirm the checkbox before closing.");
       return;
     }
-    setCloseError("");
 
     const cleanedExpenses = expenses
       .filter((e) => e.categoryName.trim() && Number(e.amount || 0) > 0)
@@ -106,7 +117,7 @@ function CloseSalesPage() {
       });
       navigate("/open-sales", { replace: true });
     } catch (err) {
-      setCloseError(err?.response?.data?.message || "Failed to close session.");
+      showToast("error", "Closing Failed", err?.response?.data?.message || "Failed to close session.");
     } finally {
       setCloseLoading(false);
     }
@@ -334,10 +345,6 @@ function CloseSalesPage() {
             className="w-full resize-none rounded-xl border-2 border-[#d9c1bc] bg-[#fef9f2] p-4 text-[16px] outline-none transition-colors focus:border-[#3d0c02]"
           />
         </div>
-
-        {closeError && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{closeError}</div>
-        )}
       </main>
 
       {/* Footer */}
@@ -366,6 +373,48 @@ function CloseSalesPage() {
           </button>
         </div>
       </div>
+
+      {/* ─── Toast ────────────────────────────────────────────────────────── */}
+      {toast && (
+        <div className="fixed right-6 top-6 z-[9999]">
+          <div
+            className={`pointer-events-auto min-w-[320px] max-w-[420px] rounded-2xl border px-4 py-4 shadow-2xl backdrop-blur-sm transition-all ${
+              toast.type === "success"
+                ? "border-emerald-500/20 bg-white/90"
+                : "border-red-500/20 bg-white/90"
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                  toast.type === "success"
+                    ? "bg-emerald-100 text-emerald-600"
+                    : "bg-red-100 text-red-600"
+                }`}
+              >
+                {toast.type === "success" ? "✓" : "✕"}
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-extrabold">{toast.title}</h4>
+                <p className="mt-1 text-sm text-[#54433f]">{toast.message}</p>
+              </div>
+              <button
+                onClick={() => setToast(null)}
+                className="text-[#86736e] transition-colors hover:text-[#0e0100]"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-black/5">
+              <div
+                className={`h-full animate-[toastShrink_3s_linear_forwards] rounded-full ${
+                  toast.type === "success" ? "bg-emerald-500" : "bg-red-500"
+                }`}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
