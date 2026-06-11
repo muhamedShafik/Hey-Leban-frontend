@@ -117,7 +117,6 @@ function POSPage() {
   const [discountInput, setDiscountInput] = useState("");
 
   const todaySession = useSessionStore((state) => state.todaySession);
-  const fetchTodaySession = useSessionStore((state) => state.fetchTodaySession);
   const discountAmount = useCartStore((state) => state.discountAmount);
   const setDiscountAmount = useCartStore((state) => state.setDiscountAmount);
 
@@ -169,12 +168,9 @@ function POSPage() {
     }
   }, [categories, selectedCategoryId]);
 
-  // Fetch session info for display (non-blocking — no redirect)
-  useEffect(() => {
-    if (!todaySession) {
-      fetchTodaySession();
-    }
-  }, [todaySession, fetchTodaySession]);
+
+  // Session display is populated by OpenSalesPage or when backend responds.
+  // No automatic fetch — backend enforces session on order/kot/payment endpoints.
 
   useEffect(() => {
     if (!toast) return;
