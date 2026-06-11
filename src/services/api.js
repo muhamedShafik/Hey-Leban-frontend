@@ -98,8 +98,8 @@
 
 import axios from "axios";
 import { useAuthStore } from "../store/authStore";
-import dotenv from "dotenv";
-dotenv.config();
+
+
 
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
