@@ -62,13 +62,14 @@ api.interceptors.response.use(
   (error) => {
     const status = error?.response?.status;
     const message = error?.response?.data?.message || "";
+    const method = error?.config?.method?.toLowerCase();
 
     if (
       status === 409 &&
       message.toLowerCase().includes("sales session is not opened")
     ) {
-      // Only redirect if not already on the open-sales page
-      if (window.location.pathname !== "/open-sales") {
+      // Only redirect for mutations (take order, checkout, etc), NOT for GET requests
+      if (method !== "get" && window.location.pathname !== "/open-sales") {
         window.location.href = "/open-sales";
       }
       return Promise.reject(error);
