@@ -1,5 +1,5 @@
 // src/pages/POSPage.jsx
-import { useMemo, useState, useEffect, useDeferredValue, memo } from "react";
+import { useMemo, useState, useEffect, useDeferredValue, memo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import PaymentModal from "../components/pos/PaymentModal";
@@ -119,6 +119,8 @@ function POSPage() {
   const [discountInput, setDiscountInput] = useState("");
 
   const todaySession = useSessionStore((state) => state.todaySession);
+  const isSessionChecked = useSessionStore((state) => state.isSessionChecked);
+  const fetchTodaySession = useSessionStore((state) => state.fetchTodaySession);
   const discountAmount = useCartStore((state) => state.discountAmount);
   const setDiscountAmount = useCartStore((state) => state.setDiscountAmount);
 
@@ -171,8 +173,12 @@ function POSPage() {
   }, [categories, selectedCategoryId]);
 
 
-  // Session display is populated by OpenSalesPage or when backend responds.
-  // No automatic fetch — backend enforces session on order/kot/payment endpoints.
+  // Fetch session on mount if it hasn't been checked yet (e.g. after login)
+  useEffect(() => {
+    if (!isSessionChecked) {
+      fetchTodaySession();
+    }
+  }, [isSessionChecked, fetchTodaySession]);
 
   useEffect(() => {
     if (!toast) return;
@@ -571,31 +577,65 @@ function POSPage() {
     navigate("/settings");
   };
 
+  // ── Swipe handling for categories ──
+  const touchStartRef = useRef(null);
+  const touchEndRef = useRef(null);
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e) => {
+    touchEndRef.current = null;
+    touchStartRef.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchMove = (e) => {
+    touchEndRef.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStartRef.current || !touchEndRef.current) return;
+    const distance = touchStartRef.current - touchEndRef.current;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe || isRightSwipe) {
+      const currentIndex = visibleCategories.findIndex((c) => c.id === selectedCategoryId);
+      if (currentIndex === -1) return;
+
+      if (isLeftSwipe && currentIndex < visibleCategories.length - 1) {
+        // Swipe left -> Next category
+        setSelectedCategoryId(visibleCategories[currentIndex + 1].id);
+      } else if (isRightSwipe && currentIndex > 0) {
+        // Swipe right -> Previous category
+        setSelectedCategoryId(visibleCategories[currentIndex - 1].id);
+      }
+    }
+  };
+
   return (
     <>
       <div className="flex min-h-screen lg:h-screen flex-col lg:overflow-hidden bg-[#fef9f2] text-[#3d0c02]">
-        <header className="flex h-auto min-h-[56px] shrink-0 flex-wrap items-center justify-between gap-y-3 bg-[#3d0c02] px-4 py-3 lg:px-6 lg:py-0 text-white">
-          <div className="flex flex-wrap items-center gap-2 lg:gap-4 w-full md:w-auto">
+        <header className="flex h-auto min-h-[56px] shrink-0 flex-wrap items-center justify-between gap-y-3 bg-[#3d0c02] px-4 py-3 md:px-6 md:py-0 text-white">
+          <div className="flex flex-wrap items-center gap-2 md:gap-4 w-full md:w-auto">
             
             {/* Mobile Hamburger Button */}
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden p-2 -ml-2 text-white/80 hover:text-white"
+              className="md:hidden p-2 -ml-2 text-white/80 hover:text-white"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
 
-            <span className="hidden lg:inline border-l border-white/20 pl-2 lg:pl-4 text-xs lg:text-sm opacity-60">
+            <span className="hidden md:inline border-l border-white/20 pl-2 md:pl-4 text-xs md:text-sm opacity-60">
               {todaySession?.date
                 ? new Date(todaySession.date).toLocaleDateString()
                 : "Today"}
             </span>
 
-            <div className="ml-auto lg:ml-4 flex flex-1 lg:flex-initial items-center gap-2">
-              <div className="relative w-full lg:w-40">
+            <div className="ml-auto md:ml-4 flex flex-1 md:flex-initial items-center gap-2">
+              <div className="relative w-full md:w-40">
                 <input
                   value={kotSearch}
                   onChange={(e) => setKotSearch(e.target.value)}
@@ -615,7 +655,7 @@ function POSPage() {
                 />
               </div>
 
-              <div className="relative w-full lg:w-40">
+              <div className="relative w-full md:w-40">
                 <input
                   value={orderSearch}
                   onChange={(e) => setOrderSearch(e.target.value)}
@@ -638,7 +678,7 @@ function POSPage() {
           </div>
 
           {/* Desktop Right Side Buttons */}
-          <div className="hidden lg:flex items-center gap-4 justify-end">
+          <div className="hidden md:flex items-center gap-4 justify-end">
             <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wide">
               {todaySession?.status || "No Session"}
             </span>
@@ -704,7 +744,7 @@ function POSPage() {
 
         {/* Mobile Sidebar Overlay */}
         {isMobileMenuOpen && (
-          <div className="fixed inset-0 z-50 flex lg:hidden">
+          <div className="fixed inset-0 z-50 flex md:hidden">
             {/* Backdrop */}
             <div 
               className="fixed inset-0 bg-black/50 transition-opacity"
@@ -829,7 +869,12 @@ function POSPage() {
               </div>
             </nav>
 
-            <div className="grid flex-1 grid-cols-2 md:grid-cols-3 content-start gap-4 lg:gap-6 overflow-y-auto p-4 lg:p-6 min-h-[50vh] lg:min-h-0">
+            <div 
+              className="grid flex-1 grid-cols-2 md:grid-cols-3 content-start gap-4 lg:gap-6 overflow-y-auto p-4 lg:p-6 min-h-[50vh] lg:min-h-0"
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+            >
               {isLoading &&
                 [1, 2, 3, 4, 5, 6].map((i) => (
                   <div
