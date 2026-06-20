@@ -149,7 +149,8 @@ function POSPage() {
   } = useQuery({
     queryKey: ["catalogue"],
     queryFn: fetchCatalogue,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 24 * 60 * 60 * 1000, // 24 hours
   });
 
   // seed lastSavedOrder from store when navigated from Orders → Go to Cart
