@@ -15,19 +15,27 @@ import { useTicketSearchQuery } from "../hooks/orders/useTicketSearchQuery";
 import { useOrdersQuery } from "../hooks/orders/useOrdersQuery";
 import OrdersSearchDropdown from "../components/orders/OrdersSearchDropdown";
 import { printBoth } from "../utils/printHelpers";
+import { useInventoryQuery } from "../hooks/inventory/useInventoryQuery";
 
 const formatMoney = (value) => {
   const numeric = Number(value || 0);
   return numeric.toFixed(2);
 };
 
-const ProductCard = memo(({ product, quantity, onAdd }) => {
+const ProductCard = memo(({ product, quantity, stockCount, onAdd }) => {
+  const currentStock = stockCount - quantity;
+  const isOutOfStock = currentStock <= 0;
+
   return (
     <button
       type="button"
+      disabled={isOutOfStock}
       onClick={() => onAdd(product.id, product)}
-      className="relative flex aspect-square flex-col items-center justify-center gap-4 rounded-2xl bg-white p-6 text-center shadow-[0_4px_12px_rgba(61,12,2,0.08)] active:scale-[0.97]"
+      className={`relative flex aspect-square flex-col items-center justify-center gap-4 rounded-2xl p-6 text-center shadow-[0_4px_12px_rgba(61,12,2,0.08)] transition-all ${isOutOfStock ? 'bg-red-100 animate-pulse opacity-90 cursor-not-allowed border-2 border-red-300' : 'bg-white active:scale-[0.97]'}`}
     >
+      <div className={`absolute left-3 top-3 rounded-md px-2 py-1 text-[11px] font-bold shadow-sm transition-colors ${isOutOfStock ? 'bg-red-600 text-white' : 'bg-[#f8f3ec] text-[#54433f]'}`}>
+        Stock: {currentStock}
+      </div>
       {quantity > 0 && (
         <div className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-[#E8A020] text-sm font-bold text-white">
           {quantity}
@@ -152,6 +160,18 @@ function POSPage() {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 24 * 60 * 60 * 1000, // 24 hours
   });
+
+  const { data: inventoryData = [] } = useInventoryQuery();
+
+  const inventoryMap = useMemo(() => {
+    const map = {};
+    if (Array.isArray(inventoryData)) {
+      inventoryData.forEach((inv) => {
+        map[inv.productId] = inv.inHandCount || 0;
+      });
+    }
+    return map;
+  }, [inventoryData]);
 
   // seed lastSavedOrder from store when navigated from Orders → Go to Cart
   useEffect(() => {
@@ -902,6 +922,7 @@ function POSPage() {
                     key={product.id}
                     product={product}
                     quantity={cartQtyMap[product.id] || 0}
+                    stockCount={inventoryMap[product.id] || 0}
                     onAdd={addToCart}
                   />
                 ))}
