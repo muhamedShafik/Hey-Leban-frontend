@@ -1,5 +1,6 @@
 // src/components/settings/items/ItemForm.jsx
 import { useEffect, useMemo, useState } from "react";
+import { useRawMaterialsQuery } from "../../../hooks/rawMaterials/useRawMaterialsQuery";
 
 const initialItemState = {
   categoryId: "",
@@ -22,12 +23,22 @@ function ItemForm({
   onSubmitItem,
   onCancelEdit,
   onCreateCategory,
+  onLinkIngredient,
+  onUnlinkIngredient,
+  linkLoading,
 }) {
   const [form, setForm] = useState(initialItemState);
   const [errors, setErrors] = useState({});
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [categoryForm, setCategoryForm] = useState(initialCategoryState);
   const [categoryErrors, setCategoryErrors] = useState({});
+
+  // Inventory tracking state
+  const [trackingMode, setTrackingMode] = useState("individual"); // "individual" | "base"
+  const [selectedBaseId, setSelectedBaseId] = useState("");
+  const [trackingChanged, setTrackingChanged] = useState(false);
+
+  const { data: rawMaterials = [] } = useRawMaterialsQuery();
 
   useEffect(() => {
     if (editingItem) {
@@ -42,6 +53,10 @@ function ItemForm({
             : String(editingItem.sortOrder),
       });
       setErrors({});
+      // Reset tracking state for this item
+      setTrackingChanged(false);
+      // Check if the item is linked via rawMaterials linkedProducts
+      // We'll determine the current state when rawMaterials load
       return;
     }
 
@@ -50,7 +65,25 @@ function ItemForm({
       categoryId: prev.categoryId || categories[0]?.id || "",
     }));
     setErrors({});
+    setTrackingMode("individual");
+    setSelectedBaseId("");
+    setTrackingChanged(false);
   }, [editingItem, categories]);
+
+  // When editing item and rawMaterials are loaded, pre-populate tracking state
+  useEffect(() => {
+    if (!editingItem || rawMaterials.length === 0 || trackingChanged) return;
+    const linkedBase = rawMaterials.find((rm) =>
+      (rm.linkedProducts || []).some((p) => p.id === editingItem.id)
+    );
+    if (linkedBase) {
+      setTrackingMode("base");
+      setSelectedBaseId(linkedBase.id);
+    } else {
+      setTrackingMode("individual");
+      setSelectedBaseId("");
+    }
+  }, [editingItem, rawMaterials, trackingChanged]);
 
   const categoryOptions = useMemo(
     () =>
@@ -118,12 +151,12 @@ function ItemForm({
     if (!validateItem()) return;
 
     onSubmitItem({
-  categoryId: form.categoryId || null,
-  name: form.name.trim(),
-  description: form.description.trim() || null,
-  price: Number(form.price),
-  sortOrder: form.sortOrder === "" ? 0 : Number(form.sortOrder),
-});
+      categoryId: form.categoryId || null,
+      name: form.name.trim(),
+      description: form.description.trim() || null,
+      price: Number(form.price),
+      sortOrder: form.sortOrder === "" ? 0 : Number(form.sortOrder),
+    });
   };
 
   const handleCategorySubmit = (e) => {
@@ -149,6 +182,25 @@ function ItemForm({
     );
   };
 
+  const handleTrackingModeChange = (newMode) => {
+    setTrackingMode(newMode);
+    setTrackingChanged(true);
+    if (newMode === "individual") {
+      setSelectedBaseId("");
+      if (editingItem?.id) {
+        onUnlinkIngredient?.({ productId: editingItem.id });
+      }
+    }
+  };
+
+  const handleBaseSelection = (baseId) => {
+    setSelectedBaseId(baseId);
+    setTrackingChanged(true);
+    if (editingItem?.id && baseId) {
+      onLinkIngredient?.({ productId: editingItem.id, rawMaterialId: baseId });
+    }
+  };
+
   return (
     <div className="rounded-2xl border border-[#ded9d3] bg-white p-5 shadow-sm">
       <div className="border-b border-[#ded9d3] pb-4">
@@ -167,25 +219,34 @@ function ItemForm({
           </label>
           <select
             value={form.categoryId}
-            onChange={(e) => setForm((prev) => ({ ...prev, categoryId: e.target.value }))}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, categoryId: e.target.value }))
+            }
             className="h-11 w-full rounded-xl border border-[#ded9d3] bg-[#fef9f2] px-3 outline-none focus:border-[#E8A020]"
           >
             <option value="">Select category</option>
             {categoryOptions.map((category) => (
               <option key={category.id} value={category.id}>
-                {category.name}{category.isActive ? "" : " (Inactive)"}
+                {category.name}
+                {category.isActive ? "" : " (Inactive)"}
               </option>
             ))}
           </select>
           {errors.categoryId ? (
-            <p className="mt-1 text-xs font-bold text-red-600">{errors.categoryId}</p>
+            <p className="mt-1 text-xs font-bold text-red-600">
+              {errors.categoryId}
+            </p>
           ) : null}
         </div>
 
         <div className="flex items-center justify-between rounded-xl border border-dashed border-[#ded9d3] bg-[#f8f3ec]/50 p-3">
           <div>
-            <p className="text-sm font-bold text-[#3d0c02]">Need a new category?</p>
-            <p className="text-xs text-[#54433f]">Create it here without leaving this page.</p>
+            <p className="text-sm font-bold text-[#3d0c02]">
+              Need a new category?
+            </p>
+            <p className="text-xs text-[#54433f]">
+              Create it here without leaving this page.
+            </p>
           </div>
           <button
             type="button"
@@ -206,13 +267,18 @@ function ItemForm({
                 type="text"
                 value={categoryForm.name}
                 onChange={(e) =>
-                  setCategoryForm((prev) => ({ ...prev, name: e.target.value }))
+                  setCategoryForm((prev) => ({
+                    ...prev,
+                    name: e.target.value,
+                  }))
                 }
                 placeholder="Example: Cakes"
                 className="h-11 w-full rounded-xl border border-[#ded9d3] bg-white px-3 outline-none focus:border-[#E8A020]"
               />
               {categoryErrors.name ? (
-                <p className="mt-1 text-xs font-bold text-red-600">{categoryErrors.name}</p>
+                <p className="mt-1 text-xs font-bold text-red-600">
+                  {categoryErrors.name}
+                </p>
               ) : null}
             </div>
 
@@ -224,7 +290,10 @@ function ItemForm({
                 type="number"
                 value={categoryForm.sortOrder}
                 onChange={(e) =>
-                  setCategoryForm((prev) => ({ ...prev, sortOrder: e.target.value }))
+                  setCategoryForm((prev) => ({
+                    ...prev,
+                    sortOrder: e.target.value,
+                  }))
                 }
                 placeholder="0"
                 className="h-11 w-full rounded-xl border border-[#ded9d3] bg-white px-3 outline-none focus:border-[#E8A020]"
@@ -241,7 +310,9 @@ function ItemForm({
               onClick={handleCategorySubmit}
               disabled={categoryLoading}
               className={`h-11 w-full rounded-xl text-sm font-bold text-white ${
-                categoryLoading ? "cursor-not-allowed bg-gray-400" : "bg-[#3d0c02]"
+                categoryLoading
+                  ? "cursor-not-allowed bg-gray-400"
+                  : "bg-[#3d0c02]"
               }`}
             >
               {categoryLoading ? "Saving Category..." : "Save Category"}
@@ -256,7 +327,9 @@ function ItemForm({
           <input
             type="text"
             value={form.name}
-            onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, name: e.target.value }))
+            }
             placeholder="Example: Belgian Truffle Cake"
             className="h-11 w-full rounded-xl border border-[#ded9d3] bg-[#fef9f2] px-3 outline-none focus:border-[#E8A020]"
           />
@@ -279,7 +352,9 @@ function ItemForm({
             className="w-full rounded-xl border border-[#ded9d3] bg-[#fef9f2] p-3 outline-none focus:border-[#E8A020]"
           />
           {errors.description ? (
-            <p className="mt-1 text-xs font-bold text-red-600">{errors.description}</p>
+            <p className="mt-1 text-xs font-bold text-red-600">
+              {errors.description}
+            </p>
           ) : null}
         </div>
 
@@ -293,12 +368,16 @@ function ItemForm({
               min="0"
               step="0.01"
               value={form.price}
-              onChange={(e) => setForm((prev) => ({ ...prev, price: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, price: e.target.value }))
+              }
               placeholder="0.00"
               className="h-11 w-full rounded-xl border border-[#ded9d3] bg-[#fef9f2] px-3 outline-none focus:border-[#E8A020]"
             />
             {errors.price ? (
-              <p className="mt-1 text-xs font-bold text-red-600">{errors.price}</p>
+              <p className="mt-1 text-xs font-bold text-red-600">
+                {errors.price}
+              </p>
             ) : null}
           </div>
 
@@ -316,10 +395,99 @@ function ItemForm({
               className="h-11 w-full rounded-xl border border-[#ded9d3] bg-[#fef9f2] px-3 outline-none focus:border-[#E8A020]"
             />
             {errors.sortOrder ? (
-              <p className="mt-1 text-xs font-bold text-red-600">{errors.sortOrder}</p>
+              <p className="mt-1 text-xs font-bold text-red-600">
+                {errors.sortOrder}
+              </p>
             ) : null}
           </div>
         </div>
+
+        {/* ── Inventory Tracking (only shown when editing an existing item) ── */}
+        {editingItem && (
+          <div className="rounded-xl border border-[#ded9d3] bg-[#f8f3ec]/60 p-4 space-y-3">
+            <div>
+              <p className="text-sm font-extrabold text-[#3d0c02]">
+                🗄️ Inventory Tracking
+              </p>
+              <p className="text-xs text-[#54433f] mt-0.5">
+                Choose how stock is tracked when this product is ordered.
+              </p>
+            </div>
+
+            {/* Toggle buttons */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleTrackingModeChange("individual")}
+                className={`flex flex-col items-center justify-center gap-1 rounded-xl py-3 px-2 text-center font-bold transition-all border-2 ${
+                  trackingMode === "individual"
+                    ? "border-[#3d0c02] bg-[#3d0c02] text-white"
+                    : "border-[#ded9d3] bg-white text-[#54433f] hover:border-[#3d0c02]"
+                }`}
+              >
+                <span className="text-base leading-none">📦</span>
+                <span className="text-[11px] leading-tight">Track Individually</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTrackingMode("base");
+                  setTrackingChanged(true);
+                }}
+                className={`flex flex-col items-center justify-center gap-1 rounded-xl py-3 px-2 text-center font-bold transition-all border-2 ${
+                  trackingMode === "base"
+                    ? "border-[#3d0c02] bg-[#3d0c02] text-white"
+                    : "border-[#ded9d3] bg-white text-[#54433f] hover:border-[#3d0c02]"
+                }`}
+              >
+                <span className="text-base leading-none">🔗</span>
+                <span className="text-[11px] leading-tight">Track via Base</span>
+              </button>
+            </div>
+
+            {/* Base selector */}
+            {trackingMode === "base" && (
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-[#3d0c02]">
+                  Select Raw Material Base
+                </label>
+                {rawMaterials.length === 0 ? (
+                  <p className="text-xs text-[#54433f] italic">
+                    No raw materials found. Create one in the Inventory page first.
+                  </p>
+                ) : (
+                  <select
+                    value={selectedBaseId}
+                    onChange={(e) => handleBaseSelection(e.target.value)}
+                    disabled={linkLoading}
+                    className={`h-10 w-full rounded-xl border border-[#ded9d3] bg-white px-3 text-sm outline-none focus:border-[#E8A020] transition-colors ${
+                      linkLoading ? "opacity-60 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    <option value="">-- Choose a base --</option>
+                    {rawMaterials.map((rm) => (
+                      <option key={rm.id} value={rm.id}>
+                        {rm.name} ({rm.inHandCount} in stock)
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {linkLoading && (
+                  <p className="text-xs text-[#54433f] flex items-center gap-1">
+                    <span className="inline-block w-3 h-3 border-2 border-[#3d0c02] border-t-transparent rounded-full animate-spin" />
+                    Saving link...
+                  </p>
+                )}
+              </div>
+            )}
+
+            {trackingMode === "individual" && (
+              <p className="text-xs text-[#54433f] bg-white rounded-lg px-3 py-2 border border-[#ded9d3]">
+                Stock is tracked per product. Use the Inventory page to update counts directly.
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="flex gap-3 pt-2">
           <button

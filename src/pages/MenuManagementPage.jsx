@@ -19,6 +19,8 @@ function MenuManagementPage() {
         updateCategoryMutation,
         deleteCategoryMutation,
         toggleCategoryActiveMutation,
+        linkIngredientMutation,
+        unlinkIngredientMutation,
     } = useItemMutations();
 
     const [searchQuery, setSearchQuery] = useState("");
@@ -177,6 +179,40 @@ function MenuManagementPage() {
             categoryId: item.categoryId || category.id,
         });
         window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const handleLinkIngredient = async ({ productId, rawMaterialId }) => {
+        try {
+            await linkIngredientMutation.mutateAsync({ productId, rawMaterialId });
+            showToast({
+                type: "success",
+                title: "Ingredient linked",
+                message: "Product is now tracked via the selected base.",
+            });
+        } catch (err) {
+            showToast({
+                type: "error",
+                title: "Link failed",
+                message: getErrorMessage(err, "Failed to link product to base."),
+            });
+        }
+    };
+
+    const handleUnlinkIngredient = async ({ productId }) => {
+        try {
+            await unlinkIngredientMutation.mutateAsync({ productId });
+            showToast({
+                type: "success",
+                title: "Ingredient unlinked",
+                message: "Product will now be tracked individually.",
+            });
+        } catch (err) {
+            showToast({
+                type: "error",
+                title: "Unlink failed",
+                message: getErrorMessage(err, "Failed to unlink product from base."),
+            });
+        }
     };
 
     const handleDeleteItem = (item) => {
@@ -384,6 +420,9 @@ function MenuManagementPage() {
                                 onSubmitItem={handleSubmitItem}
                                 onCancelEdit={() => setEditingItem(null)}
                                 onCreateCategory={handleCreateCategory}
+                                onLinkIngredient={handleLinkIngredient}
+                                onUnlinkIngredient={handleUnlinkIngredient}
+                                linkLoading={linkIngredientMutation.isPending || unlinkIngredientMutation.isPending}
                             />
                         </div>
 
