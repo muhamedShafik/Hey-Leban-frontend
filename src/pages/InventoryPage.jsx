@@ -357,9 +357,12 @@ function IndividualProductsTab({ onToast }) {
       return;
     }
     try {
-      const update = { productId: modalState.product.id, addQuantity: modalState.addQuantity };
-      if (modalState.note.trim()) update.note = modalState.note.trim();
-      await updateInventoryMutation.mutateAsync({ updates: [update] });
+      const payload = { addQuantity: modalState.addQuantity };
+      if (modalState.note.trim()) payload.note = modalState.note.trim();
+      await updateInventoryMutation.mutateAsync({
+        productId: modalState.product.id,
+        payload,
+      });
       onToast({
         type: "success",
         title: "Stock Added",

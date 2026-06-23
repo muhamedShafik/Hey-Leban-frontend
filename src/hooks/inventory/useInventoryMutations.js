@@ -5,9 +5,9 @@ import { updateInventory } from "../../services/inventoryService";
 export function useInventoryMutations() {
   const queryClient = useQueryClient();
 
-  // payload: { updates: [{ productId, addQuantity|setQuantity, note? }] }
+  // payload: { addQuantity|setQuantity, note? }
   const updateInventoryMutation = useMutation({
-    mutationFn: (payload) => updateInventory(payload),
+    mutationFn: ({ productId, payload }) => updateInventory(productId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
     },
