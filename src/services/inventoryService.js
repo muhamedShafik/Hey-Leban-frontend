@@ -7,7 +7,8 @@ export const fetchInventory = async () => {
   return unwrapData(response);
 };
 
-export const updateInventory = async (productId, payload) => {
-  const response = await api.post(`/api/inventory/${productId}`, payload);
+// Batch update: payload = { updates: [{ productId, addQuantity|setQuantity, note? }] }
+export const updateInventory = async (payload) => {
+  const response = await api.post("/api/inventory", payload);
   return unwrapData(response);
 };
