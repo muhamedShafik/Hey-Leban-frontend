@@ -35,7 +35,7 @@ function TinderCard({
     ["rgba(239, 68, 68, 0.08)", "rgba(255, 255, 255, 1)", "rgba(16, 185, 129, 0.08)"]
   );
 
-  const currentStock = stockCount - quantity;
+  const currentStock = stockCount;
   const isOutOfStock = currentStock <= 0;
 
   const handleDragEnd = (event, info) => {
@@ -264,14 +264,7 @@ export default function TinderCardStack({
             const baseId = productToBaseId[product.id];
             const ownCartQty = cartQtyMap[product.id] || 0;
 
-            let displayStockCount;
-            if (baseId) {
-              const totalBaseConsumed = baseCartQtyMap[baseId] || 0;
-              const baseStock = inventoryMap[product.id] || 0;
-              displayStockCount = baseStock - totalBaseConsumed + ownCartQty;
-            } else {
-              displayStockCount = inventoryMap[product.id] || 0;
-            }
+            const displayStockCount = inventoryMap[product.id] || 0;
 
             return (
               <TinderCard
