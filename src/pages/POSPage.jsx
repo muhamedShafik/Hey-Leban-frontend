@@ -25,7 +25,7 @@ const formatMoney = (value) => {
 };
 
 const ProductCard = memo(({ product, quantity, stockCount, onAdd }) => {
-  const currentStock = stockCount - quantity;
+  const currentStock = stockCount;
   const isOutOfStock = currentStock <= 0;
 
   return (
@@ -1048,14 +1048,7 @@ function POSPage() {
                     const baseId = productToBaseId[product.id];
                     const ownCartQty = cartQtyMap[product.id] || 0;
 
-                    let displayStockCount;
-                    if (baseId) {
-                      const totalBaseConsumed = baseCartQtyMap[baseId] || 0;
-                      const baseStock = inventoryMap[product.id] || 0;
-                      displayStockCount = baseStock - totalBaseConsumed + ownCartQty;
-                    } else {
-                      displayStockCount = inventoryMap[product.id] || 0;
-                    }
+                    const displayStockCount = inventoryMap[product.id] || 0;
 
                     return (
                       <ProductCard
