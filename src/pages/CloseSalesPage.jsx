@@ -23,6 +23,7 @@ function CloseSalesPage() {
   ]);
   const [confirmed, setConfirmed] = useState(false);
   const [closeLoading, setCloseLoading] = useState(false);
+  const [breakdownMode, setBreakdownMode] = useState("price"); // "price" | "cogs"
   
   const [toast, setToast] = useState(null);
 
@@ -90,10 +91,47 @@ function CloseSalesPage() {
   const payments = overview?.payments;
   const cashDrawer = overview?.cashDrawer;
   const sess = overview?.session;
+  const orderList = overview?.orderList || [];
 
   const totalRevenue = Number(orders?.totalRevenueAmount || 0);
   const openingCash = Number(sess?.openingCash || 0);
   const grossProfit = totalRevenue - totalExpenses;
+
+  // ── Breakdown computation from orderList ────────────────────────────────
+  const categoryBreakdown = {};
+  const productBreakdown = {};
+
+  orderList.forEach((order) => {
+    (order.orderItems || []).forEach((item) => {
+      const qty = item.quantity || 0;
+      const total = item.total || 0;
+      const cogsPerUnit = item.product?.cogs ?? 0; // null treated as 0
+      const cogsTotal = cogsPerUnit * qty;
+      const productName = item.product?.name || item.name || "Unknown";
+      const categoryName = item.product?.category?.name || "Uncategorised";
+
+      // Category aggregation
+      if (!categoryBreakdown[categoryName]) {
+        categoryBreakdown[categoryName] = { qty: 0, total: 0, cogsTotal: 0 };
+      }
+      categoryBreakdown[categoryName].qty += qty;
+      categoryBreakdown[categoryName].total += total;
+      categoryBreakdown[categoryName].cogsTotal += cogsTotal;
+
+      // Product aggregation
+      const prodKey = `${categoryName}||${productName}`;
+      if (!productBreakdown[prodKey]) {
+        productBreakdown[prodKey] = { name: productName, category: categoryName, qty: 0, total: 0, cogsTotal: 0 };
+      }
+      productBreakdown[prodKey].qty += qty;
+      productBreakdown[prodKey].total += total;
+      productBreakdown[prodKey].cogsTotal += cogsTotal;
+    });
+  });
+
+  const categoryRows = Object.entries(categoryBreakdown).sort((a, b) => b[1].total - a[1].total);
+  const productRows = Object.values(productBreakdown).sort((a, b) => b.total - a.total);
+  const hasBreakdown = productRows.length > 0;
 
   const handleClose = async () => {
     if (!confirmed) {
@@ -258,6 +296,111 @@ function CloseSalesPage() {
                 <p className="mt-4 rounded-full bg-white/30 px-3 py-1 text-[12px] font-semibold">Includes opening petty cash and today's cash collections</p>
               </div>
             </div>
+
+            {/* Sales Breakdown */}
+            {hasBreakdown && (
+              <div className="rounded-2xl border border-[#d9c1bc]/30 bg-[#fef9f2] p-5 shadow-[0_4px_8px_rgba(61,12,2,0.08)]">
+                {/* Section header with toggle */}
+                <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
+                  <h3 className="flex items-center gap-2 text-[18px] font-bold text-[#0e0100]">🗂️ Sales Breakdown</h3>
+                  {/* Price / COGS toggle */}
+                  <div className="flex items-center gap-1 rounded-full border border-[#d9c1bc]/50 bg-[#f2ede6] p-1">
+                    <button
+                      type="button"
+                      onClick={() => setBreakdownMode("price")}
+                      className={`rounded-full px-3 py-1 text-[12px] font-bold transition-all ${
+                        breakdownMode === "price"
+                          ? "bg-[#3d0c02] text-white shadow-sm"
+                          : "text-[#54433f] hover:text-[#0e0100]"
+                      }`}
+                    >
+                      💰 Price
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBreakdownMode("cogs")}
+                      className={`rounded-full px-3 py-1 text-[12px] font-bold transition-all ${
+                        breakdownMode === "cogs"
+                          ? "bg-[#3d0c02] text-white shadow-sm"
+                          : "text-[#54433f] hover:text-[#0e0100]"
+                      }`}
+                    >
+                      🏭 COGS
+                    </button>
+                  </div>
+                </div>
+
+                {/* Category pills */}
+                <div className="mb-4">
+                  <p className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-[#54433f]">By Category</p>
+                  <div className="flex flex-wrap gap-2">
+                    {categoryRows.map(([cat, data]) => (
+                      <div
+                        key={cat}
+                        className="flex items-center gap-2 rounded-full border border-[#d9c1bc]/40 bg-[#f8f3ec] px-4 py-1.5"
+                      >
+                        <span className="text-[13px] font-bold text-[#0e0100]">{cat}</span>
+                        <span className="rounded-full bg-[#3d0c02]/10 px-2 py-0.5 text-[11px] font-bold text-[#3d0c02]">
+                          {data.qty} sold
+                        </span>
+                        <span className="text-[13px] font-semibold text-[#54433f]">
+                          {formatMoney(breakdownMode === "cogs" ? data.cogsTotal : data.total)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Product table */}
+                <div>
+                  <p className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-[#54433f]">By Product</p>
+                  <div className="overflow-hidden rounded-xl border border-[#e6e2db]">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-[#f2ede6] text-left">
+                          <th className="px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-[#54433f]">Product</th>
+                          <th className="px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-[#54433f]">Category</th>
+                          <th className="px-4 py-2 text-center text-[12px] font-bold uppercase tracking-wider text-[#54433f]">Qty</th>
+                          <th className="px-4 py-2 text-right text-[12px] font-bold uppercase tracking-wider text-[#54433f]">
+                            {breakdownMode === "cogs" ? "COGS" : "Amount"}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {productRows.map((p, i) => (
+                          <tr
+                            key={`${p.category}-${p.name}`}
+                            className={i % 2 === 0 ? "bg-[#fef9f2]" : "bg-[#f8f3ec]/60"}
+                          >
+                            <td className="px-4 py-2.5 font-semibold text-[#0e0100]">{p.name}</td>
+                            <td className="px-4 py-2.5 text-[#54433f]">{p.category}</td>
+                            <td className="px-4 py-2.5 text-center">
+                              <span className="rounded-full bg-[#3d0c02]/10 px-2.5 py-0.5 text-[12px] font-bold text-[#3d0c02]">
+                                ×{p.qty}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5 text-right font-bold text-[#0e0100]" style={{ fontFamily: "Hanken Grotesk, sans-serif" }}>
+                              {formatMoney(breakdownMode === "cogs" ? p.cogsTotal : p.total)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t border-[#e6e2db] bg-[#f2ede6]">
+                          <td colSpan={2} className="px-4 py-2.5 text-[13px] font-bold text-[#0e0100]">Total</td>
+                          <td className="px-4 py-2.5 text-center text-[13px] font-bold text-[#0e0100]">
+                            ×{productRows.reduce((s, p) => s + p.qty, 0)}
+                          </td>
+                          <td className="px-4 py-2.5 text-right text-[13px] font-bold text-[#0e0100]" style={{ fontFamily: "Hanken Grotesk, sans-serif" }}>
+                            {formatMoney(productRows.reduce((s, p) => s + (breakdownMode === "cogs" ? p.cogsTotal : p.total), 0))}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* RIGHT COLUMN */}
