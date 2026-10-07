@@ -354,14 +354,49 @@ function CloseSalesPage() {
                 {/* Product table */}
                 <div>
                   <p className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-[#54433f]">By Product</p>
-                  <div className="overflow-hidden rounded-xl border border-[#e6e2db]">
-                    <table className="w-full text-sm">
+
+                  {/* ── Mobile card list (hidden on sm+) ── */}
+                  <div className="flex flex-col gap-2 sm:hidden">
+                    {productRows.map((p, i) => (
+                      <div
+                        key={`${p.category}-${p.name}`}
+                        className={`flex items-center justify-between gap-3 rounded-xl border border-[#e6e2db] px-4 py-3 ${
+                          i % 2 === 0 ? "bg-[#fef9f2]" : "bg-[#f8f3ec]/60"
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[13px] font-semibold text-[#0e0100]">{p.name}</p>
+                          <p className="mt-0.5 text-[11px] text-[#86736e]">{p.category}</p>
+                        </div>
+                        <span className="shrink-0 rounded-full bg-[#3d0c02]/10 px-2.5 py-0.5 text-[12px] font-bold text-[#3d0c02]">
+                          ×{p.qty}
+                        </span>
+                        <span className="shrink-0 text-[14px] font-bold text-[#0e0100]" style={{ fontFamily: "Hanken Grotesk, sans-serif" }}>
+                          {formatMoney(breakdownMode === "cogs" ? p.cogsTotal : p.total)}
+                        </span>
+                      </div>
+                    ))}
+                    {/* Mobile totals row */}
+                    <div className="flex items-center justify-between gap-3 rounded-xl border border-[#e6e2db] bg-[#f2ede6] px-4 py-3">
+                      <p className="text-[13px] font-bold text-[#0e0100]">Total</p>
+                      <span className="rounded-full bg-[#3d0c02]/10 px-2.5 py-0.5 text-[12px] font-bold text-[#3d0c02]">
+                        ×{productRows.reduce((s, p) => s + p.qty, 0)}
+                      </span>
+                      <span className="text-[14px] font-bold text-[#0e0100]" style={{ fontFamily: "Hanken Grotesk, sans-serif" }}>
+                        {formatMoney(productRows.reduce((s, p) => s + (breakdownMode === "cogs" ? p.cogsTotal : p.total), 0))}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* ── Desktop / tablet scrollable table (hidden below sm) ── */}
+                  <div className="hidden sm:block overflow-x-auto rounded-xl border border-[#e6e2db]">
+                    <table className="min-w-full text-sm">
                       <thead>
                         <tr className="bg-[#f2ede6] text-left">
-                          <th className="px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-[#54433f]">Product</th>
-                          <th className="px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-[#54433f]">Category</th>
-                          <th className="px-4 py-2 text-center text-[12px] font-bold uppercase tracking-wider text-[#54433f]">Qty</th>
-                          <th className="px-4 py-2 text-right text-[12px] font-bold uppercase tracking-wider text-[#54433f]">
+                          <th className="whitespace-nowrap px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-[#54433f]">Product</th>
+                          <th className="whitespace-nowrap px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-[#54433f]">Category</th>
+                          <th className="whitespace-nowrap px-4 py-2 text-center text-[12px] font-bold uppercase tracking-wider text-[#54433f]">Qty</th>
+                          <th className="whitespace-nowrap px-4 py-2 text-right text-[12px] font-bold uppercase tracking-wider text-[#54433f]">
                             {breakdownMode === "cogs" ? "COGS" : "Amount"}
                           </th>
                         </tr>
@@ -373,13 +408,13 @@ function CloseSalesPage() {
                             className={i % 2 === 0 ? "bg-[#fef9f2]" : "bg-[#f8f3ec]/60"}
                           >
                             <td className="px-4 py-2.5 font-semibold text-[#0e0100]">{p.name}</td>
-                            <td className="px-4 py-2.5 text-[#54433f]">{p.category}</td>
+                            <td className="whitespace-nowrap px-4 py-2.5 text-[#54433f]">{p.category}</td>
                             <td className="px-4 py-2.5 text-center">
                               <span className="rounded-full bg-[#3d0c02]/10 px-2.5 py-0.5 text-[12px] font-bold text-[#3d0c02]">
                                 ×{p.qty}
                               </span>
                             </td>
-                            <td className="px-4 py-2.5 text-right font-bold text-[#0e0100]" style={{ fontFamily: "Hanken Grotesk, sans-serif" }}>
+                            <td className="whitespace-nowrap px-4 py-2.5 text-right font-bold text-[#0e0100]" style={{ fontFamily: "Hanken Grotesk, sans-serif" }}>
                               {formatMoney(breakdownMode === "cogs" ? p.cogsTotal : p.total)}
                             </td>
                           </tr>
@@ -391,7 +426,7 @@ function CloseSalesPage() {
                           <td className="px-4 py-2.5 text-center text-[13px] font-bold text-[#0e0100]">
                             ×{productRows.reduce((s, p) => s + p.qty, 0)}
                           </td>
-                          <td className="px-4 py-2.5 text-right text-[13px] font-bold text-[#0e0100]" style={{ fontFamily: "Hanken Grotesk, sans-serif" }}>
+                          <td className="whitespace-nowrap px-4 py-2.5 text-right text-[13px] font-bold text-[#0e0100]" style={{ fontFamily: "Hanken Grotesk, sans-serif" }}>
                             {formatMoney(productRows.reduce((s, p) => s + (breakdownMode === "cogs" ? p.cogsTotal : p.total), 0))}
                           </td>
                         </tr>
