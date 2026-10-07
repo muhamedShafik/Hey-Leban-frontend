@@ -7,6 +7,7 @@ const initialItemState = {
   name: "",
   description: "",
   price: "",
+  cogs: "",
   sortOrder: "",
 };
 
@@ -49,6 +50,10 @@ function ItemForm({
         name: editingItem.name || "",
         description: editingItem.description || "",
         price: String(editingItem.price ?? ""),
+        cogs:
+          editingItem.cogs === null || editingItem.cogs === undefined
+            ? ""
+            : String(editingItem.cogs),
         sortOrder:
           editingItem.sortOrder === null || editingItem.sortOrder === undefined
             ? ""
@@ -114,6 +119,12 @@ function ItemForm({
       nextErrors.price = "Price must be 0 or more.";
     }
 
+    if (form.cogs !== "" && Number.isNaN(Number(form.cogs))) {
+      nextErrors.cogs = "COGS must be a valid number.";
+    } else if (form.cogs !== "" && Number(form.cogs) < 0) {
+      nextErrors.cogs = "COGS must be 0 or more.";
+    }
+
     if (form.sortOrder !== "" && Number.isNaN(Number(form.sortOrder))) {
       nextErrors.sortOrder = "Sort order must be a valid number.";
     }
@@ -155,6 +166,7 @@ function ItemForm({
       name: form.name.trim(),
       description: form.description.trim() || null,
       price: Number(form.price),
+      cogs: form.cogs === "" ? null : Number(form.cogs),
       sortOrder: form.sortOrder === "" ? 0 : Number(form.sortOrder),
     }, {
       trackingMode,
@@ -408,23 +420,46 @@ function ItemForm({
 
             <div>
               <label className="mb-1 block text-sm font-bold text-[#3d0c02]">
-                Sort Order
+                COGS{" "}
+                <span className="font-normal text-[#54433f]">(optional)</span>
               </label>
               <input
                 type="number"
-                value={form.sortOrder}
+                min="0"
+                step="0.01"
+                value={form.cogs}
                 onChange={(e) =>
-                  setForm((prev) => ({ ...prev, sortOrder: e.target.value }))
+                  setForm((prev) => ({ ...prev, cogs: e.target.value }))
                 }
-                placeholder="0"
+                placeholder="Cost of Goods Sold"
                 className="h-11 w-full rounded-xl border border-[#ded9d3] bg-[#fef9f2] px-3 outline-none focus:border-[#E8A020]"
               />
-              {errors.sortOrder ? (
+              {errors.cogs ? (
                 <p className="mt-1 text-xs font-bold text-red-600">
-                  {errors.sortOrder}
+                  {errors.cogs}
                 </p>
               ) : null}
             </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-bold text-[#3d0c02]">
+              Sort Order
+            </label>
+            <input
+              type="number"
+              value={form.sortOrder}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, sortOrder: e.target.value }))
+              }
+              placeholder="0"
+              className="h-11 w-full rounded-xl border border-[#ded9d3] bg-[#fef9f2] px-3 outline-none focus:border-[#E8A020]"
+            />
+            {errors.sortOrder ? (
+              <p className="mt-1 text-xs font-bold text-red-600">
+                {errors.sortOrder}
+              </p>
+            ) : null}
           </div>
 
           {/* ── Inventory Tracking ── */}
