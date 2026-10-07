@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSessionStore } from "../store/sessionStore";
-import { getSalesSessionOverview } from "../services/salesSessionService";
+import { getSalesSessionOverview, getTodaySalesSession } from "../services/salesSessionService";
 
 function OpenSalesPage() {
   const navigate = useNavigate();
@@ -13,9 +13,35 @@ function OpenSalesPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Toast
+  const [toast, setToast] = useState(null);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 5000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  // Detect unclosed session from a previous day
+  const [prevOpenSession, setPrevOpenSession] = useState(null);
+  useEffect(() => {
+    getTodaySalesSession()
+      .then((session) => {
+        if (session?.status === "OPEN") {
+          setPrevOpenSession(session);
+          setToast({
+            type: "warning",
+            title: "Previous Session Not Closed",
+            message: "A sales session is still open. Please close it before opening a new one.",
+          });
+        }
+      })
+      .catch(() => {}); // No open session today — fine
+  }, []);
+
   // Previous session overview
   const [prevOverview, setPrevOverview] = useState(null);
   const [prevLoading, setPrevLoading] = useState(true);
+
 
   const quickAmounts = [500, 1000, 1500, 2000];
 
@@ -83,16 +109,66 @@ function OpenSalesPage() {
     } catch (err) {
       const message =
         err?.response?.data?.message || "Failed to open sales session.";
-      setError(message);
+
+      // Detect "previous session still open" error from the backend
+      const isPrevSessionOpen =
+        message.toLowerCase().includes("still open") ||
+        message.toLowerCase().includes("previous") ||
+        message.toLowerCase().includes("already") ||
+        err?.response?.status === 409;
+
+      if (isPrevSessionOpen) {
+        // Show the warning banner + toast instead of a plain red error
+        setPrevOpenSession({ status: "OPEN" });
+        setToast({
+          type: "warning",
+          title: "Previous Session Not Closed",
+          message: "A sales session is still open. Please close it before opening a new one.",
+        });
+        // Also surface the exact backend message below the form
+        setError(message);
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
   };
 
+
   const cashEntered = Number(openingCash) > 0;
 
   return (
     <div className="min-h-screen bg-[#fef9f2] pb-32 font-[Plus_Jakarta_Sans]">
+
+      {/* ── Toast ── */}
+      {toast && (
+        <div className="pointer-events-none fixed right-4 top-4 z-[200]">
+          <div className="pointer-events-auto flex min-w-[320px] max-w-[420px] items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-4 shadow-2xl">
+            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-200 text-lg text-amber-700">
+              ⚠
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="text-sm font-extrabold text-amber-900">{toast.title}</h4>
+              <p className="mt-1 text-sm text-amber-800 opacity-90">{toast.message}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setToast(null)}
+              className="text-lg leading-none text-amber-600 opacity-60 hover:opacity-100"
+            >
+              ×
+            </button>
+          </div>
+          <div className="mt-1 h-1 overflow-hidden rounded-full bg-amber-200">
+            <div
+              className="h-full rounded-full bg-amber-500"
+              style={{ animation: "toastShrink 5s linear forwards" }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-50 flex h-[80px] items-center justify-between bg-[#fef9f2] px-6 shadow-sm">
         <div className="flex items-center gap-4">
@@ -116,7 +192,33 @@ function OpenSalesPage() {
 
       {/* Main Content */}
       <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6">
+
+        {/* ── Unclosed Session Warning Banner ── */}
+        {prevOpenSession && (
+          <section className="flex items-start gap-4 rounded-2xl border border-amber-300 bg-amber-50 p-5 shadow-[0_4px_8px_rgba(61,12,2,0.08)]">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-400 text-white text-xl shadow-sm">
+              ⚠
+            </div>
+            <div className="flex-1">
+              <h2 className="mb-1 text-[18px] font-bold text-amber-800" style={{ fontFamily: "Hanken Grotesk, sans-serif" }}>
+                Previous Session Not Closed
+              </h2>
+              <p className="mb-3 text-[14px] text-amber-700">
+                A sales session is still <strong>OPEN</strong>. Please close it before opening a new session to avoid data issues.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate("/close-sales")}
+                className="rounded-xl bg-amber-500 px-5 py-2 text-sm font-extrabold text-white shadow-sm transition-all hover:bg-amber-600 active:scale-95"
+              >
+                → Close Previous Session
+              </button>
+            </div>
+          </section>
+        )}
+
         {/* Section 1: Status */}
+
         <section className="flex items-start gap-4 rounded-2xl border border-red-200/60 bg-[#ffdad6] p-5 shadow-[0_4px_8px_rgba(61,12,2,0.08)]">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#ba1a1a] text-white shadow-sm">
             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">

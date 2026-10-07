@@ -15,6 +15,9 @@ export default function SummaryPage() {
   const startDate = queryParams.get("startDate");
   const endDate = queryParams.get("endDate");
 
+  const [page, setPage] = useState(1);
+
+
   const {
     data: summaryData,
     isLoading: summaryLoading,

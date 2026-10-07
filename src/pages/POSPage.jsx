@@ -908,12 +908,8 @@ function POSPage() {
                 if (shouldClearCartOnLeave()) resetCurrentOrderFlow();
                 navigate("/close-sales");
               }}
-              disabled={!isSessionOpen}
-              title={!isSessionOpen ? "No active session to close" : "Close sale session"}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition-all ${!isSessionOpen
-                ? "border-white/10 text-white/30 cursor-not-allowed"
-                : "border-white/30 text-white hover:bg-white/10"
-                }`}
+              title="Close sale session"
+              className="rounded-lg border border-white/30 px-3 py-1.5 text-xs font-bold text-white transition-all hover:bg-white/10"
             >
               Close Sale
             </button>
@@ -1001,16 +997,12 @@ function POSPage() {
 
                 <button
                   type="button"
-                  disabled={!isSessionOpen}
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     if (shouldClearCartOnLeave()) resetCurrentOrderFlow();
                     navigate("/close-sales");
                   }}
-                  className={`rounded-xl border px-4 py-3 font-bold text-left text-sm ${!isSessionOpen
-                    ? "border-white/10 text-white/30 cursor-not-allowed"
-                    : "border-white/30 text-white"
-                    }`}
+                  className="rounded-xl border border-white/30 px-4 py-3 font-bold text-left text-sm text-white"
                 >
                   Close Sale
                 </button>
