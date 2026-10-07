@@ -29,7 +29,6 @@ export const useAuthStore = create((set) => ({
         const shop = await getShopDetails();
         set({ shop });
       } catch {
-        // Non-critical — print will just fall back to empty values
       }
     } catch {
       window.accessToken = null;
