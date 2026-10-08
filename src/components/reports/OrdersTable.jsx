@@ -83,11 +83,12 @@ export default function OrdersTable({
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-[#d9c1bc]/20 bg-white shadow-sm">
-        <div className="hidden grid-cols-[70px_130px_120px_1fr_120px_90px_90px_95px] gap-2 border-b border-[#f0ece6] bg-[#faf7f3] px-4 py-2.5 text-[11px] font-bold uppercase tracking-widest text-[#54433f]/60 md:grid">
+        <div className="hidden grid-cols-[70px_130px_120px_1fr_90px_120px_90px_90px_95px] gap-2 border-b border-[#f0ece6] bg-[#faf7f3] px-4 py-2.5 text-[11px] font-bold uppercase tracking-widest text-[#54433f]/60 md:grid">
           <span>Token</span>
           <span>Order No</span>
           <span>KOT No</span>
           <span>Items</span>
+          <span className="text-[#7a4d00]">COGS</span>
           <span>Time</span>
           <span>Total Paid</span>
           <span>Payment</span>
@@ -119,62 +120,30 @@ export default function OrdersTable({
         ) : (
           <>
             <div className="hidden divide-y divide-[#f0ece6] md:block">
-              {orderRows.map((order) => (
-                <div
-                  key={order.id}
-                  onClick={() => {
-                    setSelectedOrderId(order.id);
-                    setModalOpen(true);
-                  }}
-                  className="grid grid-cols-[70px_130px_120px_1fr_120px_90px_90px_95px] items-center gap-2 px-4 py-3 text-[13px] transition hover:bg-[#faf7f3] cursor-pointer"
-                >
-                  <span className="font-bold text-[#3d0c02]">#{order.tokenNo}</span>
-                  <span className="font-semibold text-[#1d1c18]">{order.orderNo || "—"}</span>
-                  <span className="font-semibold text-[#54433f]/80">{order.kot?.kotNo || "—"}</span>
-                  <span className="truncate text-[#54433f]">
-                    {order.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
-                  </span>
-                  <span className="text-[11px] text-[#54433f]/60">
-                    {new Date(order.orderTime).toLocaleTimeString("en-IN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                  <span className="font-bold text-[#1d1c18]">
-                    ₹{order.totalPaid.toLocaleString("en-IN")}
-                  </span>
-                  <PaymentMethodBadge method={order.paymentMethod} />
-                  <StatusBadge status={order.status} />
-                </div>
-              ))}
-            </div>
-
-            <div className="divide-y divide-[#f0ece6] md:hidden">
-              {orderRows.map((order) => (
-                <div
-                  key={order.id}
-                  onClick={() => {
-                    setSelectedOrderId(order.id);
-                    setModalOpen(true);
-                  }}
-                  className="space-y-3 px-4 py-4 cursor-pointer hover:bg-[#faf7f3]/50 transition"
-                >
-                  <div className="flex items-center justify-between">
+              {orderRows.map((order) => {
+                const orderCogs = (order.items || []).reduce(
+                  (sum, i) => sum + (Number(i.cogs) || 0) * (Number(i.quantity) || 0),
+                  0
+                );
+                return (
+                  <div
+                    key={order.id}
+                    onClick={() => {
+                      setSelectedOrderId(order.id);
+                      setModalOpen(true);
+                    }}
+                    className="grid grid-cols-[70px_130px_120px_1fr_90px_120px_90px_90px_95px] items-center gap-2 px-4 py-3 text-[13px] transition hover:bg-[#faf7f3] cursor-pointer"
+                  >
                     <span className="font-bold text-[#3d0c02]">#{order.tokenNo}</span>
-                    <StatusBadge status={order.status} />
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#54433f]/80 font-bold bg-[#faf7f3] px-2.5 py-1.5 rounded-xl border border-[#f0ece6]">
-                    <span>Order: {order.orderNo || "—"}</span>
-                    {order.kot?.kotNo && <span>• KOT: {order.kot.kotNo}</span>}
-                  </div>
-
-                  <p className="text-[13px] text-[#54433f]">
-                    {order.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-3 text-[12px] text-[#54433f]/70">
-                    <span>
+                    <span className="font-semibold text-[#1d1c18]">{order.orderNo || "—"}</span>
+                    <span className="font-semibold text-[#54433f]/80">{order.kot?.kotNo || "—"}</span>
+                    <span className="truncate text-[#54433f]">
+                      {order.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
+                    </span>
+                    <span className="font-semibold text-[#7a4d00]">
+                      {orderCogs > 0 ? `₹${orderCogs.toLocaleString("en-IN")}` : <span className="text-[#54433f]/30">—</span>}
+                    </span>
+                    <span className="text-[11px] text-[#54433f]/60">
                       {new Date(order.orderTime).toLocaleTimeString("en-IN", {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -184,9 +153,61 @@ export default function OrdersTable({
                       ₹{order.totalPaid.toLocaleString("en-IN")}
                     </span>
                     <PaymentMethodBadge method={order.paymentMethod} />
+                    <StatusBadge status={order.status} />
                   </div>
-                </div>
-              ))}
+                );
+              })}
+            </div>
+
+            <div className="divide-y divide-[#f0ece6] md:hidden">
+              {orderRows.map((order) => {
+                const orderCogs = (order.items || []).reduce(
+                  (sum, i) => sum + (Number(i.cogs) || 0) * (Number(i.quantity) || 0),
+                  0
+                );
+                return (
+                  <div
+                    key={order.id}
+                    onClick={() => {
+                      setSelectedOrderId(order.id);
+                      setModalOpen(true);
+                    }}
+                    className="space-y-3 px-4 py-4 cursor-pointer hover:bg-[#faf7f3]/50 transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-[#3d0c02]">#{order.tokenNo}</span>
+                      <StatusBadge status={order.status} />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#54433f]/80 font-bold bg-[#faf7f3] px-2.5 py-1.5 rounded-xl border border-[#f0ece6]">
+                      <span>Order: {order.orderNo || "—"}</span>
+                      {order.kot?.kotNo && <span>• KOT: {order.kot.kotNo}</span>}
+                    </div>
+
+                    <p className="text-[13px] text-[#54433f]">
+                      {order.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-3 text-[12px] text-[#54433f]/70">
+                      <span>
+                        {new Date(order.orderTime).toLocaleTimeString("en-IN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      <span className="font-bold text-[#1d1c18]">
+                        ₹{order.totalPaid.toLocaleString("en-IN")}
+                      </span>
+                      {orderCogs > 0 && (
+                        <span className="rounded-full bg-[#feb234]/20 px-2 py-0.5 text-[11px] font-bold text-[#7a4d00]">
+                          COGS ₹{orderCogs.toLocaleString("en-IN")}
+                        </span>
+                      )}
+                      <PaymentMethodBadge method={order.paymentMethod} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </>
         )}
@@ -216,8 +237,8 @@ export default function OrdersTable({
                     type="button"
                     onClick={() => setPage(p)}
                     className={`h-8 w-8 rounded-lg text-[12px] font-bold transition ${page === p
-                        ? "bg-[#3d0c02] text-white"
-                        : "border border-[#d9c1bc] text-[#54433f] hover:bg-[#f3ede7]"
+                      ? "bg-[#3d0c02] text-white"
+                      : "border border-[#d9c1bc] text-[#54433f] hover:bg-[#f3ede7]"
                       }`}
                   >
                     {p}
@@ -242,7 +263,7 @@ export default function OrdersTable({
       {modalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="relative w-full max-w-[360px] bg-white text-[#1d1c18] font-mono p-6 shadow-2xl rounded-2xl border-4 border-double border-[#ded9d3] max-h-[85vh] overflow-y-auto flex flex-col">
-            
+
             {/* Close trigger top-right */}
             <button
               onClick={() => {
