@@ -112,7 +112,7 @@ export default function SummaryPage() {
           )}
 
           {!summaryLoading && !summaryError && (
-            <PaymentsSection payments={payments} navigate={navigate} />
+            <PaymentsSection payments={payments} navigate={navigate} totalCogs={orders?.totalCogs ?? 0} />
           )}
 
           <OrdersTable

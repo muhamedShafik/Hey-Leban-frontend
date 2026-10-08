@@ -41,7 +41,7 @@ function PaymentBar({ cash = 0, upi = 0, card = 0 }) {
   );
 }
 
-export default function PaymentsSection({ payments, navigate }) {
+export default function PaymentsSection({ payments, navigate, totalCogs }) {
   return (
     <section className="mb-6">
       <h2 className="mb-3 text-[13px] font-bold uppercase tracking-widest text-[#54433f]/60">
@@ -103,6 +103,26 @@ export default function PaymentsSection({ payments, navigate }) {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* ── Total COGS Card ── */}
+      <div className="mt-3 flex items-center justify-between gap-4 rounded-2xl border border-[#feb234]/40 bg-[#fffbf0] p-5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#feb234]/20">
+            <span className="text-[18px]">📦</span>
+          </div>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-[#7a4d00]/70">
+              Total COGS
+            </p>
+            <p className="mt-0.5 text-[10px] text-[#7a4d00]/50 font-medium">
+              Cancelled orders excluded
+            </p>
+          </div>
+        </div>
+        <p className="text-[28px] font-extrabold text-[#7a4d00]">
+          ₹{(totalCogs ?? 0).toLocaleString("en-IN")}
+        </p>
       </div>
     </section>
   );
