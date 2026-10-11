@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import SettingsCard from "../components/settings/SettingsCard";
 import { useAuthStore } from "../store/authStore";
+import ProfileDropdown from "../components/layout/ProfileDropdown";
 
 function SettingsPage() {
   const navigate = useNavigate();
@@ -42,11 +43,12 @@ function SettingsPage() {
           <button
             type="button"
             onClick={handleLogout}
-            className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-600/10 px-4 py-2 text-[14px] font-bold text-red-200 transition hover:bg-red-600/30 hover:text-white"
+            className="hidden sm:flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-600/10 px-4 py-2 text-[14px] font-bold text-red-200 transition hover:bg-red-600/30 hover:text-white"
           >
             <span className="text-[16px]">🚪</span>
             <span>Logout</span>
           </button>
+          <ProfileDropdown />
         </div>
       </header>
  

@@ -1,6 +1,8 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useMemo } from "react";
 import useBusinessReportQuery from "../hooks/reports/useBusinessReportQuery";
+import { getReportDateDetails, formatDateRangeWithDay } from "../utils/dateUtils";
+import ProfileDropdown from "../components/layout/ProfileDropdown";
 
 export default function BusinessReportPage() {
   const navigate = useNavigate();
@@ -9,10 +11,20 @@ export default function BusinessReportPage() {
   const sessionId = queryParams.get("sessionId");
   const startDate = queryParams.get("startDate");
   const endDate = queryParams.get("endDate");
+  const dateParam = queryParams.get("date");
 
   const { data, isLoading, isError } = useBusinessReportQuery({ sessionId, startDate, endDate });
 
   const report = data || {};
+
+  const dateDetails = getReportDateDetails({
+    sessionId,
+    startDate,
+    endDate,
+    dateParam,
+    sessionObj: report.session,
+    fallbackDate: null,
+  });
 
   const [sellersPage, setSellersPage] = useState(1);
 
@@ -137,9 +149,14 @@ export default function BusinessReportPage() {
       <header className="fixed top-0 w-full z-50 bg-[#0e0100] dark:bg-[#3d0c02] text-white dark:text-[#bf715c] font-sans font-bold shadow-md shadow-[0_4px_8px_-2px_rgba(61,12,2,0.08)] flex justify-between items-center px-6 h-16">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="hover:opacity-80">← Back</button>
+          <div className="flex flex-col">
+            <h1 className="text-lg font-bold text-white uppercase tracking-wider">Business Report</h1>
+            <p className="text-[12px] font-semibold text-white/80 normal-case tracking-normal flex items-center gap-1.5 mt-0.5">
+              <span>📅</span> {dateDetails.formattedDate}
+            </p>
+          </div>
         </div>
-        <h1 className="text-lg font-bold text-white uppercase tracking-wider">Business Report</h1>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => window.print()}
@@ -147,6 +164,7 @@ export default function BusinessReportPage() {
           >
             <span>⬇</span> Export PDF
           </button>
+          <ProfileDropdown />
         </div>
       </header>
 
@@ -412,7 +430,7 @@ export default function BusinessReportPage() {
               <h2 className="font-bold text-lg text-[#0e0100]">Operating Expenses Breakdown</h2>
               {(startDate && endDate) && (
                 <p className="text-[11px] text-[#54433f]/60 mt-0.5">
-                  Totals for {startDate} → {endDate}
+                  Totals for {formatDateRangeWithDay(startDate, endDate, "→")}
                 </p>
               )}
             </div>

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import CreateRawMaterialModal from "../components/inventory/CreateRawMaterialModal";
 import RawMaterialStockModal from "../components/inventory/RawMaterialStockModal";
 import LinkItemsModal from "../components/inventory/LinkItemsModal";
+import ProfileDropdown from "../components/layout/ProfileDropdown";
 import { useItemMutations } from "../hooks/items/useItemMutations";
 import { useRawMaterialsQuery } from "../hooks/rawMaterials/useRawMaterialsQuery";
 import { useRawMaterialsMutations } from "../hooks/rawMaterials/useRawMaterialsMutations";
@@ -716,23 +717,26 @@ const InventoryPage = () => {
   return (
     <div className="bg-[#fef9f2] text-[#1d1c18] font-sans min-h-screen">
       {/* Top Nav */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-[#3d0c02] text-white shadow-md flex items-center w-full px-6 h-16">
-        <button
-          type="button"
-          onClick={() => navigate("/settings")}
-          className="flex h-12 w-12 items-center justify-center rounded-full transition hover:bg-white/10 mr-4"
-          aria-label="Back to Settings"
-        >
-          <span className="text-[28px]">←</span>
-        </button>
-        <div>
-          <span className="text-xl font-bold leading-tight">
-            Inventory Management
-          </span>
-          <p className="text-white/60 text-xs font-medium hidden sm:block">
-            Track bases and individual product stock
-          </p>
+      <header className="fixed top-0 left-0 right-0 z-40 bg-[#3d0c02] text-white shadow-md flex items-center justify-between w-full px-6 h-16">
+        <div className="flex items-center">
+          <button
+            type="button"
+            onClick={() => navigate("/settings")}
+            className="flex h-12 w-12 items-center justify-center rounded-full transition hover:bg-white/10 mr-4"
+            aria-label="Back to Settings"
+          >
+            <span className="text-[28px]">←</span>
+          </button>
+          <div>
+            <span className="text-xl font-bold leading-tight">
+              Inventory Management
+            </span>
+            <p className="text-white/60 text-xs font-medium hidden sm:block">
+              Track bases and individual product stock
+            </p>
+          </div>
         </div>
+        <ProfileDropdown />
       </header>
 
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 pt-24 pb-10">
