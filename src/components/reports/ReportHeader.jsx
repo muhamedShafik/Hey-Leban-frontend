@@ -1,3 +1,6 @@
+import { formatDateWithDay, formatDateRangeWithDay } from "../../utils/dateUtils";
+import ProfileDropdown from "../layout/ProfileDropdown";
+
 function formatDisplayDate(filter) {
   if (filter.type === "preset") {
     const label = filter.preset === "today" ? "Today" : "Yesterday";
@@ -7,15 +10,10 @@ function formatDisplayDate(filter) {
       date.setDate(date.getDate() - 1);
     }
 
-    return `${label} — ${date.toLocaleDateString("en-IN", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    })}`;
+    return `${label} — ${formatDateWithDay(date)}`;
   }
 
-  return `${filter.startDate} to ${filter.endDate}`;
+  return formatDateRangeWithDay(filter.startDate, filter.endDate);
 }
 
 export default function ReportHeader({
@@ -96,6 +94,8 @@ export default function ReportHeader({
             Apply
           </button>
         </div>
+
+        <ProfileDropdown />
       </div>
     </header>
   );

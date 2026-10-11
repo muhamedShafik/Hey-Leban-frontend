@@ -17,6 +17,7 @@ import OrdersSearchDropdown from "../components/orders/OrdersSearchDropdown";
 import { printBoth, printBill, printKOT } from "../utils/printHelpers";
 import { useInventoryQuery } from "../hooks/inventory/useInventoryQuery";
 import { useRawMaterialsQuery } from "../hooks/rawMaterials/useRawMaterialsQuery";
+import ProfileDropdown from "../components/layout/ProfileDropdown";
 
 const formatMoney = (value) => {
   const numeric = Number(value || 0);
@@ -208,11 +209,11 @@ function POSPage() {
 
   // seed lastSavedOrder from store when navigated from Orders → Go to Cart
   useEffect(() => {
-    if (currentOrderId && !lastSavedOrder?.id) {
+    if (currentOrderId && lastSavedOrder?.id !== currentOrderId) {
       setLastSavedOrder({ id: currentOrderId, orderNo: currentOrderNo });
       setIsCartDirty(false);
     }
-  }, []); // run only on mount — intentional empty deps
+  }, [currentOrderId, currentOrderNo]);
 
   useEffect(() => {
     if (showDiscountEditor) {
@@ -847,6 +848,8 @@ function POSPage() {
                   }}
                 />
               </div>
+
+              <ProfileDropdown className="md:hidden shrink-0" />
             </div>
           </div>
 
@@ -932,6 +935,8 @@ function POSPage() {
                 </span>
               </div>
             </button>
+
+            <ProfileDropdown />
           </div>
         </header>
 

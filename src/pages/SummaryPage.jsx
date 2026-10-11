@@ -6,6 +6,8 @@ import PaymentsSection from "../components/reports/PaymentsSection";
 import OrdersTable from "../components/reports/OrdersTable";
 import useSalesSummaryQuery from "../hooks/reports/useSalesSummaryQuery";
 import useReportOrdersQuery from "../hooks/reports/useReportOrdersQuery";
+import { getReportDateDetails } from "../utils/dateUtils";
+import ProfileDropdown from "../components/layout/ProfileDropdown";
 
 export default function SummaryPage() {
   const navigate = useNavigate();
@@ -14,6 +16,7 @@ export default function SummaryPage() {
   const sessionId = queryParams.get("sessionId");
   const startDate = queryParams.get("startDate");
   const endDate = queryParams.get("endDate");
+  const dateParam = queryParams.get("date");
 
   const [page, setPage] = useState(1);
 
@@ -39,10 +42,14 @@ export default function SummaryPage() {
   const orderRows = ordersData?.orders ?? [];
   const pagination = ordersData?.pagination;
 
-
-  const displayDate = sessionId 
-    ? `Session: ${sessionId.slice(-6).toUpperCase()}` 
-    : (startDate && endDate) ? `${startDate} to ${endDate}` : "Summary";
+  const dateDetails = getReportDateDetails({
+    sessionId,
+    startDate,
+    endDate,
+    dateParam,
+    sessionObj: summaryData?.session,
+    fallbackDate: orderRows[0]?.orderTime,
+  });
 
   return (
     <div className="min-h-screen bg-[#fef9f2] font-sans text-[#1d1c18]">
@@ -61,19 +68,22 @@ export default function SummaryPage() {
             <h1 className="text-[24px] font-bold leading-tight text-white">
               Summary
             </h1>
-            <p className="text-[13px] font-semibold text-white/60">
-              {displayDate}
+            <p className="text-[13px] font-semibold text-white/80 flex items-center gap-1.5 mt-0.5">
+              <span>📅</span> {dateDetails.formattedDate}
             </p>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="flex items-center gap-2 rounded-full bg-[#feb234] px-5 py-2 text-[13px] font-bold text-[#3d0c02] transition hover:bg-[#ffd06a]"
-        >
-          <span>⬇</span> Export PDF
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="flex items-center gap-2 rounded-full bg-[#feb234] px-5 py-2 text-[13px] font-bold text-[#3d0c02] transition hover:bg-[#ffd06a]"
+          >
+            <span>⬇</span> Export PDF
+          </button>
+          <ProfileDropdown />
+        </div>
       </header>
 
       <main className="min-h-screen px-4 pb-10 pt-[96px] md:px-6">

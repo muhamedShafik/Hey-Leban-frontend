@@ -4,6 +4,9 @@ import { useNavigate } from "react-router-dom";
 import DeleteConfirmModal from "../components/settings/items/DeleteConfirmModal";
 import ItemForm from "../components/settings/items/ItemForm";
 import ItemsTable from "../components/settings/items/ItemsTable";
+import QuickItemCogsModal from "../components/settings/items/QuickItemCogsModal";
+import CategoryCogsModal from "../components/settings/items/CategoryCogsModal";
+import ProfileDropdown from "../components/layout/ProfileDropdown";
 import { useCatalogueQuery } from "../hooks/items/useCatalogueQuery";
 import { useItemMutations } from "../hooks/items/useItemMutations";
 
@@ -39,6 +42,12 @@ function MenuManagementPage() {
         name: "",
         sortOrder: "",
     });
+    const [quickCogsItem, setQuickCogsItem] = useState(null);
+    const [categoryCogsState, setCategoryCogsState] = useState({
+        open: false,
+        category: null,
+    });
+    const [isBulkUpdatingCogs, setIsBulkUpdatingCogs] = useState(false);
 
     useEffect(() => {
         if (!toast) return;
@@ -260,6 +269,78 @@ function MenuManagementPage() {
         }
     };
 
+    const handleSaveQuickCogs = async (item, newCogs) => {
+        try {
+            await updateItemMutation.mutateAsync({
+                id: item.id,
+                payload: {
+                    name: item.name,
+                    description: item.description || null,
+                    categoryId: item.categoryId || null,
+                    price: Number(item.price),
+                    cogs: newCogs,
+                    sortOrder: item.sortOrder ?? 0,
+                },
+            });
+            showToast({
+                type: "success",
+                title: "COGS updated",
+                message: `${item.name} COGS set to ${newCogs !== null && newCogs !== undefined ? `₹${Number(newCogs).toFixed(2)}` : "Not set"}.`,
+            });
+            setQuickCogsItem(null);
+        } catch (err) {
+            showToast({
+                type: "error",
+                title: "Update failed",
+                message: getErrorMessage(err, "Failed to update COGS."),
+            });
+        }
+    };
+
+    const handleApplyCategoryCogs = async (category, percentage) => {
+        setIsBulkUpdatingCogs(true);
+        try {
+            const products = category.products || [];
+            if (products.length === 0) {
+                setCategoryCogsState({ open: false, category: null });
+                return;
+            }
+
+            const updatePromises = products.map((item) => {
+                const retail = Number(item.price || 0);
+                const calcCogs = Number(((retail * percentage) / 100).toFixed(2));
+                return updateItemMutation.mutateAsync({
+                    id: item.id,
+                    payload: {
+                        name: item.name,
+                        description: item.description || null,
+                        categoryId: item.categoryId || category.id,
+                        price: retail,
+                        cogs: calcCogs,
+                        sortOrder: item.sortOrder ?? 0,
+                    },
+                });
+            });
+
+            await Promise.all(updatePromises);
+
+            showToast({
+                type: "success",
+                title: "Category COGS applied",
+                message: `Applied ${percentage}% COGS to ${products.length} products in "${category.name}".`,
+            });
+            setCategoryCogsState({ open: false, category: null });
+        } catch (err) {
+            showToast({
+                type: "error",
+                title: "Bulk update failed",
+                message: getErrorMessage(err, "Failed to apply category COGS."),
+            });
+        } finally {
+            setIsBulkUpdatingCogs(false);
+        }
+    };
+
     const handleEditCategory = (category) => {
         setEditCategoryState({
             open: true,
@@ -397,13 +478,14 @@ function MenuManagementPage() {
                     </div>
                 </div>
 
-                <div className="hidden items-center gap-3 md:flex">
-                    <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-[14px] font-bold">
+                <div className="flex items-center gap-3">
+                    <div className="hidden sm:flex rounded-full border border-white/10 bg-white/10 px-4 py-2 text-[14px] font-bold">
                         Total Items: {totalItems}
                     </div>
-                    <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-[14px] font-bold">
+                    <div className="hidden md:flex rounded-full border border-white/10 bg-white/10 px-4 py-2 text-[14px] font-bold">
                         Active Categories: {activeCategoriesCount}
                     </div>
+                    <ProfileDropdown />
                 </div>
             </header>
 
@@ -450,6 +532,8 @@ function MenuManagementPage() {
                                     setEditingItem(null);
                                     setIsItemFormOpen(true);
                                 }}
+                                onQuickCogs={(item) => setQuickCogsItem(item)}
+                                onCategoryCogs={(cat) => setCategoryCogsState({ open: true, category: cat })}
                             />
                         )}
                     </div>
@@ -493,6 +577,23 @@ function MenuManagementPage() {
                 confirmLabel="Delete"
                 onClose={() => setDeleteState({ open: false, type: null, target: null })}
                 onConfirm={handleConfirmDelete}
+            />
+
+            <QuickItemCogsModal
+                isOpen={Boolean(quickCogsItem)}
+                item={quickCogsItem}
+                onClose={() => setQuickCogsItem(null)}
+                onSave={handleSaveQuickCogs}
+                isLoading={updateItemMutation.isPending}
+            />
+
+            <CategoryCogsModal
+                isOpen={categoryCogsState.open}
+                initialCategory={categoryCogsState.category}
+                categories={categories}
+                onClose={() => setCategoryCogsState({ open: false, category: null })}
+                onApplyCategoryCogs={handleApplyCategoryCogs}
+                isLoading={isBulkUpdatingCogs}
             />
 
             {editCategoryState.open && editCategoryState.category && (

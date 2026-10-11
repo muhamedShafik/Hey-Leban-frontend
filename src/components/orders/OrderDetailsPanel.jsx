@@ -144,13 +144,22 @@ function OrderDetailsPanel({
             type="button"
             disabled={!canPay || actionLoading}
             onClick={() => onCompletePayment(order)}
-            className={`rounded-xl px-4 py-2 text-sm font-bold text-white ${
+            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white transition-all ${
               !canPay || actionLoading
                 ? "cursor-not-allowed bg-gray-300"
-                : "bg-[#E8A020]"
+                : "bg-[#E8A020] hover:bg-[#d49019] active:scale-95"
             }`}
           >
-            {payMeta.code === "PARTIALLY_PAID" ? "Complete Payment" : "Go to Cart"}
+            {actionLoading ? (
+              <>
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <span>Opening Cart...</span>
+              </>
+            ) : payMeta.code === "PARTIALLY_PAID" ? (
+              "Complete Payment"
+            ) : (
+              "Go to Cart"
+            )}
           </button>
         )}
 
@@ -159,13 +168,20 @@ function OrderDetailsPanel({
           disabled={!canEdit || actionLoading}
           onClick={() => onGoToCart(order)}
           title={payMeta.isPaid ? "Paid orders cannot be edited" : isCancelled ? "Cancelled orders cannot be edited" : ""}
-          className={`rounded-xl px-4 py-2 text-sm font-bold ${
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-all ${
             !canEdit || actionLoading
               ? "cursor-not-allowed border border-[#ded9d3] bg-gray-100 text-gray-400"
-              : "border border-[#ded9d3] bg-white text-[#3d0c02] hover:bg-[#f8f3ec]"
+              : "border border-[#ded9d3] bg-white text-[#3d0c02] hover:bg-[#f8f3ec] active:scale-95"
           }`}
         >
-          Edit / Go to Cart
+          {actionLoading ? (
+            <>
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#3d0c02] border-t-transparent" />
+              <span>Opening Cart...</span>
+            </>
+          ) : (
+            "Edit / Go to Cart"
+          )}
         </button>
 
         <button
