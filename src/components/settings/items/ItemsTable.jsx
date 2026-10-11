@@ -14,6 +14,8 @@ function ItemsTable({
   showDisabledItems,
   onToggleShowDisabledItems,
   onAddItem,
+  onQuickCogs,
+  onCategoryCogs,
 }) {
   const [selectedCategoryId, setSelectedCategoryId] = useState("All");
 
@@ -122,6 +124,14 @@ function ItemsTable({
           </button>
           <button
             type="button"
+            onClick={() => onCategoryCogs?.(selectedCategory || categories[0] || null)}
+            className="h-11 px-4 rounded-xl border border-[#dfc49c] bg-[#fff8eb] text-xs font-bold text-[#8c5307] hover:bg-[#feeec9] transition-colors flex items-center gap-1.5 whitespace-nowrap shadow-2xs"
+            title="Bulk calculate and apply COGS % to an entire category"
+          >
+            <span className="font-extrabold text-sm">%</span> Category COGS
+          </button>
+          <button
+            type="button"
             onClick={onAddItem}
             className="h-11 px-5 bg-[#3d0c02] text-white rounded-xl text-sm font-bold hover:bg-[#5a1204] transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
           >
@@ -173,6 +183,15 @@ function ItemsTable({
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
+                onClick={() => onCategoryCogs?.(selectedCategory)}
+                className="rounded-lg border border-[#dfc49c] bg-[#fff8eb] px-3 py-2 text-xs font-bold text-[#8c5307] hover:bg-[#feeec9] transition-colors flex items-center gap-1.5 shadow-2xs"
+                title="Bulk set COGS percentage for this category"
+              >
+                <span>%</span>
+                <span>Set Category COGS</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => onEditCategory(selectedCategory)}
                 className="rounded-lg border border-[#ded9d3] bg-white px-3 py-2 text-xs font-bold text-[#3d0c02] hover:bg-[#f8f3ec] transition-colors"
               >
@@ -208,6 +227,7 @@ function ItemsTable({
                 <th className="px-5 py-4 text-sm font-semibold text-[#54433f]">Category</th>
                 <th className="px-5 py-4 text-sm font-semibold text-[#54433f]">Description</th>
                 <th className="px-5 py-4 text-sm font-semibold text-[#54433f]">Price</th>
+                <th className="px-5 py-4 text-sm font-semibold text-[#54433f]">COGS</th>
                 <th className="px-5 py-4 text-sm font-semibold text-[#54433f]">Sort</th>
                 <th className="px-5 py-4 text-sm font-semibold text-[#54433f]">Status</th>
                 <th className="px-5 py-4 text-sm font-semibold text-[#54433f] text-right">Action</th>
@@ -216,7 +236,7 @@ function ItemsTable({
             <tbody className="divide-y divide-[#ece7e1]">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-5 py-10 text-center text-[#54433f] text-sm">
+                  <td colSpan="9" className="px-5 py-10 text-center text-[#54433f] text-sm">
                     No matching products found.
                   </td>
                 </tr>
@@ -245,6 +265,24 @@ function ItemsTable({
                       <td className="px-5 py-4 text-sm font-bold text-[#54433f]">
                         ₹{Number(item.price || 0).toFixed(2)}
                       </td>
+                      <td className="px-5 py-4">
+                        {item.cogs != null && item.cogs !== "" ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-bold text-[#3d0c02]">
+                              ₹{Number(item.cogs).toFixed(2)}
+                            </span>
+                            {Number(item.price || 0) > 0 ? (
+                              <span className="text-[11px] font-extrabold px-1.5 py-0.5 rounded-md bg-[#f3e7cb] text-[#8c5307]">
+                                {((Number(item.cogs) / Number(item.price)) * 100).toFixed(0)}%
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-[#a8988e] italic">
+                            Not set
+                          </span>
+                        )}
+                      </td>
                       <td className="px-5 py-4 text-sm text-[#54433f]">{item.sortOrder ?? 0}</td>
                       <td className="px-5 py-4">
                         {isItemActive ? (
@@ -258,7 +296,16 @@ function ItemsTable({
                         )}
                       </td>
                       <td className="px-5 py-4 text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onQuickCogs?.(item)}
+                            className="rounded-lg border border-[#e3d7cb] bg-[#fffaf3] px-2.5 py-1.5 text-xs font-bold text-[#8c5307] hover:bg-[#f3e7cb] hover:border-[#dfc49c] transition-colors flex items-center gap-1 shadow-2xs"
+                            title="Quickly set COGS % or amount for this item"
+                          >
+                            <span>%</span>
+                            <span>COGS</span>
+                          </button>
                           <button
                             type="button"
                             onClick={() => onEditItem(item, itemCategory)}

@@ -32,16 +32,18 @@ export const useCartStore = create((set, get) => ({
 
   // ─── restore an existing order into the cart ─────────────────────────────
   hydrateFromOrder: (order) => {
+    if (!order) return;
+    const items = order.orderItems || order.items || [];
     const products = {};
-    (order.orderItems || []).forEach((item) => {
+    items.forEach((item) => {
       const key = item.productId || item.id;
       products[key] = {
         id: key,
-        productId: key,
+        productId: item.productId || item.id,
         name: item.name,
         description: item.description || "",
         price: Number(item.price || 0),
-        qty: Number(item.quantity || 0),
+        qty: Number(item.quantity ?? item.qty ?? 1),
         note: item.note || "",
       };
     });

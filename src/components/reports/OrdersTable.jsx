@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { fetchOrderById } from "../../services/orderService";
 import { printBill } from "../../utils/printHelpers";
+import { formatDateWithDay, formatTime, formatDateTimeWithDay } from "../../utils/dateUtils";
 
 function StatusBadge({ status }) {
   const map = {
@@ -89,7 +90,7 @@ export default function OrdersTable({
           <span>KOT No</span>
           <span>Items</span>
           <span className="text-[#7a4d00]">COGS</span>
-          <span>Time</span>
+          <span>Day & Time</span>
           <span>Total Paid</span>
           <span>Payment</span>
           <span>Status</span>
@@ -143,12 +144,14 @@ export default function OrdersTable({
                     <span className="font-semibold text-[#7a4d00]">
                       {orderCogs > 0 ? `₹${orderCogs.toLocaleString("en-IN")}` : <span className="text-[#54433f]/30">—</span>}
                     </span>
-                    <span className="text-[11px] text-[#54433f]/60">
-                      {new Date(order.orderTime).toLocaleTimeString("en-IN", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
+                    <div className="flex flex-col text-[11px] leading-tight text-[#54433f]/70">
+                      <span className="font-semibold text-[#1d1c18]">
+                        {formatDateWithDay(order.orderTime, { year: undefined })}
+                      </span>
+                      <span className="text-[10px] text-[#54433f]/60">
+                        {formatTime(order.orderTime)}
+                      </span>
+                    </div>
                     <span className="font-bold text-[#1d1c18]">
                       ₹{order.totalPaid.toLocaleString("en-IN")}
                     </span>
@@ -190,10 +193,7 @@ export default function OrdersTable({
 
                     <div className="flex flex-wrap items-center gap-3 text-[12px] text-[#54433f]/70">
                       <span>
-                        {new Date(order.orderTime).toLocaleTimeString("en-IN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {formatDateWithDay(order.orderTime, { year: undefined })} • {formatTime(order.orderTime)}
                       </span>
                       <span className="font-bold text-[#1d1c18]">
                         ₹{order.totalPaid.toLocaleString("en-IN")}
@@ -302,10 +302,7 @@ export default function OrdersTable({
                   <p className="text-[11px] font-bold text-[#1d1c18]">{fullOrder.orderNo}</p>
                   <p className="text-[13px] font-black text-[#E8A020]">TOKEN #{fullOrder.tokenNo}</p>
                   <p className="text-[10px] text-[#54433f]/80">
-                    {new Date(fullOrder.createdAt || fullOrder.orderTime).toLocaleString("en-IN", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
+                    {formatDateTimeWithDay(fullOrder.createdAt || fullOrder.orderTime)}
                   </p>
                   <p className="text-[10px] font-bold text-[#54433f]/70 uppercase">
                     TYPE: {fullOrder.orderType?.replace(/_/g, " ") || "DINE IN"}
