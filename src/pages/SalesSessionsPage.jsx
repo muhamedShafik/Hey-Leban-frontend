@@ -82,12 +82,6 @@ export default function SalesSessionsPage() {
                 {pagination.totalCount} Total Sessions
               </div>
             </div>
-            <button
-              onClick={() => window.print()}
-              className="flex items-center gap-2 bg-[#815500] text-white px-5 py-2.5 rounded-lg font-bold shadow-sm hover:brightness-110 active:scale-95 transition-all"
-            >
-              <span className="text-sm">⬇</span> Export PDF
-            </button>
           </div>
 
           <section className="bg-white rounded-xl p-6 shadow-sm border border-[#d9c1bc]/30 mb-8">

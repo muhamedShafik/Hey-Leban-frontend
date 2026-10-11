@@ -8,6 +8,7 @@ import useSalesSummaryQuery from "../hooks/reports/useSalesSummaryQuery";
 import useReportOrdersQuery from "../hooks/reports/useReportOrdersQuery";
 import { getReportDateDetails } from "../utils/dateUtils";
 import ProfileDropdown from "../components/layout/ProfileDropdown";
+import { exportSummaryPdf } from "../utils/pdfExport";
 
 export default function SummaryPage() {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export default function SummaryPage() {
   const dateParam = queryParams.get("date");
 
   const [page, setPage] = useState(1);
-
+  const [isExporting, setIsExporting] = useState(false);
 
   const {
     data: summaryData,
@@ -51,42 +52,46 @@ export default function SummaryPage() {
     fallbackDate: orderRows[0]?.orderTime,
   });
 
+  const handleExportPdf = async () => {
+    setIsExporting(true);
+    try {
+      await exportSummaryPdf({ summaryData, ordersData, dateDetails });
+    } catch (err) {
+      console.error("Failed to export PDF", err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#fef9f2] font-sans text-[#1d1c18]">
-      <header className="fixed left-0 top-0 z-50 flex h-[80px] w-full items-center justify-between bg-[#3d0c02] px-4 text-white shadow-md md:px-6">
-        <div className="flex items-center gap-4">
+      <header className="sticky top-0 z-50 flex w-full items-center justify-between bg-[#3d0c02] px-4 py-3 text-white shadow-md md:px-6 md:py-4">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="flex h-12 w-12 items-center justify-center rounded-full transition hover:bg-white/10"
+            className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full transition hover:bg-white/10 active:scale-95"
             aria-label="Back"
           >
-            <span className="text-[28px]">←</span>
+            <span className="text-2xl sm:text-[28px]">←</span>
           </button>
 
-          <div className="flex flex-col">
-            <h1 className="text-[24px] font-bold leading-tight text-white">
+          <div className="flex flex-col min-w-0">
+            <h1 className="text-xl sm:text-[24px] font-bold leading-tight text-white truncate">
               Summary
             </h1>
-            <p className="text-[13px] font-semibold text-white/80 flex items-center gap-1.5 mt-0.5">
+            <p className="text-xs sm:text-[13px] font-semibold text-white/80 flex items-center gap-1.5 mt-0.5 truncate">
               <span>📅</span> {dateDetails.formattedDate}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="flex items-center gap-2 rounded-full bg-[#feb234] px-5 py-2 text-[13px] font-bold text-[#3d0c02] transition hover:bg-[#ffd06a]"
-          >
-            <span>⬇</span> Export PDF
-          </button>
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <ProfileDropdown />
         </div>
       </header>
 
-      <main className="min-h-screen px-4 pb-10 pt-[96px] md:px-6">
+      <main className="min-h-screen px-4 pb-24 pt-4 sm:pt-6 md:px-6">
         <div className="mx-auto max-w-6xl">
           <section className="mb-6">
             <h2 className="mb-3 text-[13px] font-bold uppercase tracking-widest text-[#54433f]/60">
@@ -137,6 +142,27 @@ export default function SummaryPage() {
           />
         </div>
       </main>
+
+      {/* Floating Export to PDF Button */}
+      <button
+        type="button"
+        disabled={isExporting || summaryLoading}
+        onClick={handleExportPdf}
+        className="fixed bottom-[max(1.5rem,calc(env(safe-area-inset-bottom)+1rem))] right-6 z-50 flex items-center gap-2 rounded-full bg-[#feb234] px-5 py-3 text-sm font-extrabold text-[#3d0c02] shadow-[0_8px_24px_rgba(61,12,2,0.25)] hover:bg-[#ffd06a] hover:scale-105 active:scale-95 transition-all disabled:opacity-60 print:hidden cursor-pointer"
+        aria-label="Export to PDF"
+      >
+        {isExporting ? (
+          <>
+            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#3d0c02] border-t-transparent" />
+            <span>Generating...</span>
+          </>
+        ) : (
+          <>
+            <span className="text-base">📄</span>
+            <span>Export PDF</span>
+          </>
+        )}
+      </button>
     </div>
   );
 }
