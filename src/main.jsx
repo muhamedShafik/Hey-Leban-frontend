@@ -6,6 +6,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // import AppRouter from "./router/AppRouter.jsx";
 import "./index.css";
 import App from "./App.jsx";
+import { initPWALock } from "./utils/pwaLock";
+
+initPWALock();
 
 const queryClient = new QueryClient({
   defaultOptions: {

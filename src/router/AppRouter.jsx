@@ -29,11 +29,26 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function RootRedirect() {
+  const { isAuthenticated, isAuthLoading } = useAuthStore();
+  if (isAuthLoading) return <div><PageLoader /></div>;
+  return <Navigate to={isAuthenticated ? "/pos" : "/login"} replace />;
+}
+
+// Prevent logged-in users from seeing the login page
+function PublicRoute({ children }) {
+  const { isAuthenticated, isAuthLoading } = useAuthStore();
+  if (isAuthLoading) return <div><PageLoader /></div>;
+  if (isAuthenticated) return <Navigate to="/pos" replace />;
+  return children;
+}
+
 function AppRouter() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={<RootRedirect />} />
+      <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+
 
       <Route
         path="/open-sales"

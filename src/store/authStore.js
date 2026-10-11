@@ -78,10 +78,51 @@ export const useAuthStore = create((set, get) => ({
         isAuthLoading: false,
       });
     } catch {
-      window.accessToken = null;
-
-      // Check if we have another saved account we could fall back to
+      // ── Cross-origin cookie blocked (iOS Safari ITP) or cookie expired ──
+      // /api/auth/refresh relies on an HttpOnly cookie that iOS Safari blocks
+      // when the frontend and backend are on different domains.
+      // Fallback: validate the stored access token directly via a Bearer-only
+      // endpoint (/api/profile/shop) — no cookie needed.
       const currentList = getStoredAccounts();
+      const lastUsed = [...currentList].sort(
+        (a, b) => (b.lastUsedAt ?? 0) - (a.lastUsedAt ?? 0)
+      )[0];
+
+      if (lastUsed?.accessToken) {
+        window.accessToken = lastUsed.accessToken;
+
+        try {
+          // Probe with a Bearer-token-only call — does NOT need the refresh cookie
+          const shop = await getShopDetails();
+
+          // Token is still valid — restore the session from localStorage
+          const updatedList = currentList.map((a) =>
+            a.id === lastUsed.id
+              ? { ...a, shop: shop ?? a.shop, lastUsedAt: Date.now() }
+              : a
+          );
+          persistAccounts(updatedList);
+
+          set({
+            user: {
+              id: lastUsed.id,
+              name: lastUsed.name,
+              email: lastUsed.email,
+              role: lastUsed.role,
+            },
+            shop: shop ?? lastUsed.shop ?? null,
+            savedAccounts: updatedList,
+            isAuthenticated: true,
+            isAuthLoading: false,
+          });
+          return;
+        } catch {
+          // Access token also expired → full re-login required
+          window.accessToken = null;
+        }
+      }
+
+      window.accessToken = null;
       set({
         user: null,
         shop: null,
@@ -91,6 +132,8 @@ export const useAuthStore = create((set, get) => ({
       });
     }
   },
+
+
 
   login: async (email, password) => {
     const response = await api.post("/api/auth/login", { email, password });
