@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import useSalesSessionsQuery from "../hooks/reports/useSalesSessionsQuery";
+import ProfileDropdown from "../components/layout/ProfileDropdown";
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
-  return new Date(dateString).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(dateString).toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
 };
 
 const formatTime = (dateString) => {
@@ -42,8 +43,11 @@ export default function SalesSessionsPage() {
     navigate(`/${nextRoute}?startDate=${startDate}&endDate=${endDate}`);
   };
 
-  const handleSessionSelect = (sessionId) => {
-    navigate(`/${nextRoute}?sessionId=${sessionId}`);
+  const handleSessionSelect = (session) => {
+    const sessionId = typeof session === "string" ? session : session?.id;
+    const sDate = typeof session === "object" ? (session.openedAt || session.createdAt || session.businessDate) : "";
+    const dateParam = sDate ? `&date=${encodeURIComponent(sDate)}` : "";
+    navigate(`/${nextRoute}?sessionId=${sessionId}${dateParam}`);
   };
 
   const sessions = sessionsData?.sessions || [];
@@ -64,15 +68,9 @@ export default function SalesSessionsPage() {
           >
             <span className="text-[24px]">←</span>
           </button>
+          <span className="text-xl font-bold leading-tight">Sales Sessions</span>
         </div>
-        {/* <div className="flex items-center gap-2">
-           <button className="ml-2 flex items-center gap-2 pl-2 pr-1 py-1 rounded-full border border-[#d9c1bc] hover:bg-[#e6e2db]/50 transition-colors">
-            <span className="text-sm font-bold text-[#0e0100]">Admin</span>
-            <div className="w-8 h-8 rounded-full bg-[#feb234] flex items-center justify-center">
-              <span className="text-[#6d4700] text-sm">👤</span>
-            </div>
-          </button>
-        </div> */}
+        <ProfileDropdown />
       </header>
       
       <div className="flex">
@@ -180,7 +178,7 @@ export default function SalesSessionsPage() {
                     sessions.map((session) => (
                       <tr 
                         key={session.id} 
-                        onClick={() => handleSessionSelect(session.id)}
+                        onClick={() => handleSessionSelect(session)}
                         className="hover:bg-[#f2ede6]/60 transition-colors cursor-pointer"
                       >
                         <td className="px-6 py-4 font-mono text-sm text-[#0e0100] font-semibold">{session.id.slice(-6).toUpperCase()}</td>
@@ -239,7 +237,7 @@ export default function SalesSessionsPage() {
                       </div>
                     </div>
                     <button 
-                      onClick={() => handleSessionSelect(session.id)}
+                      onClick={() => handleSessionSelect(session)}
                       className="w-full mt-2 py-2 bg-[#f2ede6] text-[#3d0c02] font-bold text-sm rounded-lg flex items-center justify-center gap-2"
                     >
                       👁️ View Details

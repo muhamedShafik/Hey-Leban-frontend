@@ -14,6 +14,7 @@ import OrdersList from "../components/orders/OrdersList";
 import OrderDetailsPanel from "../components/orders/OrderDetailsPanel";
 import { useCartStore } from "../store/cartStore";
 import { printKOT, printBill } from "../utils/printHelpers";
+import ProfileDropdown from "../components/layout/ProfileDropdown";
 
 function OrdersPage() {
   const navigate = useNavigate();
@@ -130,22 +131,57 @@ function OrdersPage() {
 
   // ─── Go to Cart ───────────────────────────────────────────────────────────
   const handleGoToCart = async (order) => {
-    if (order.status === "CANCELLED") return;
-    const balance = Number(order.balanceDue ?? 0);
-    const paid = Number(order.totalPaid ?? 0);
-    const total = Number(order.totalAmount ?? 0);
-    const isFullyPaid = total > 0 && (balance <= 0 || total - paid <= 0);
-    if (isFullyPaid) return;
+    const targetOrder =
+      order ||
+      selectedOrderQuery.data ||
+      orders.find((o) => o.id === params.selectedOrderId);
+    const orderId = targetOrder?.id || params.selectedOrderId;
+    if (!orderId) {
+      showToast("error", "No Order Selected", "Please select an order first.");
+      return;
+    }
 
-    setActionState({ orderId: order.id, type: "cart" });
+    if (targetOrder?.status === "CANCELLED") {
+      showToast("error", "Cancelled Order", "Cancelled orders cannot be edited or sent to cart.");
+      return;
+    }
+
+    const total = Number(targetOrder?.totalAmount || 0);
+    const paid = Number(targetOrder?.totalPaid || 0);
+    const balance =
+      targetOrder?.balanceDue != null
+        ? Number(targetOrder.balanceDue)
+        : total - paid;
+    const isCompleted =
+      targetOrder?.status === "COMPLETED" ||
+      (total > 0 && balance <= 0 && paid > 0);
+
+    if (isCompleted) {
+      showToast("info", "Order Completed", "This order is already completed and paid.");
+      return;
+    }
+
+    setActionState({ orderId, type: "cart" });
     try {
       const fullOrder =
-        selectedOrderQuery.data?.id === order.id
+        selectedOrderQuery.data?.id === orderId &&
+        (selectedOrderQuery.data.orderItems || selectedOrderQuery.data.items)
           ? selectedOrderQuery.data
-          : await fetchOrderById(order.id);
+          : await fetchOrderById(orderId);
+
+      if (!fullOrder) {
+        throw new Error("Could not load order details.");
+      }
 
       hydrateFromOrder(fullOrder);
       navigate("/pos");
+    } catch (err) {
+      console.error("Failed to load order into cart:", err);
+      showToast(
+        "error",
+        "Failed to open cart",
+        err?.response?.data?.message || err?.message || "Could not load order into cart."
+      );
     } finally {
       setActionState({ orderId: null, type: "" });
     }
@@ -265,13 +301,16 @@ const handlePrintBill = async (order) => {
               View all orders and inspect full order details.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate("/pos")}
-            className="rounded-xl border border-[#ded9d3] bg-white px-5 py-3 text-sm font-bold shadow-sm"
-          >
-            Back to POS
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("/pos")}
+              className="rounded-xl border border-[#ded9d3] bg-white px-5 py-3 text-sm font-bold shadow-sm hover:bg-[#f8f3ec] transition-colors"
+            >
+              Back to POS
+            </button>
+            <ProfileDropdown theme="light" />
+          </div>
         </div>
 
         <OrdersFilters params={params} onChange={handleParamsChange} />

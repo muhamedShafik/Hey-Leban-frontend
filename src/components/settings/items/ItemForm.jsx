@@ -35,6 +35,11 @@ function ItemForm({
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [categoryForm, setCategoryForm] = useState(initialCategoryState);
   const [categoryErrors, setCategoryErrors] = useState({});
+  const [cogsPercent, setCogsPercent] = useState("");
+
+  const percentagePresets = [
+    10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
+  ];
 
   // Inventory tracking state
   const [trackingMode, setTrackingMode] = useState("individual"); // "individual" | "base"
@@ -45,6 +50,15 @@ function ItemForm({
 
   useEffect(() => {
     if (editingItem) {
+      const initialPrice = editingItem.price != null ? Number(editingItem.price) : 0;
+      const initialCogs = editingItem.cogs != null ? Number(editingItem.cogs) : 0;
+      if (initialPrice > 0 && initialCogs > 0) {
+        const pct = (initialCogs / initialPrice) * 100;
+        setCogsPercent(Number.isInteger(pct) ? String(pct) : pct.toFixed(1));
+      } else {
+        setCogsPercent("");
+      }
+
       setForm({
         categoryId: editingItem.categoryId || "",
         name: editingItem.name || "",
@@ -69,11 +83,47 @@ function ItemForm({
       ...initialItemState,
       categoryId: prev.categoryId || categories[0]?.id || "",
     }));
+    setCogsPercent("");
     setErrors({});
     setTrackingMode("individual");
     setSelectedBaseId("");
     setTrackingChanged(false);
   }, [editingItem, categories]);
+
+  const handlePriceChange = (e) => {
+    const newPrice = e.target.value;
+    setForm((prev) => {
+      if (cogsPercent !== "" && !Number.isNaN(Number(cogsPercent)) && newPrice !== "" && Number(newPrice) >= 0) {
+        const calcCogs = ((Number(newPrice) * Number(cogsPercent)) / 100).toFixed(2);
+        return { ...prev, price: newPrice, cogs: calcCogs };
+      }
+      return { ...prev, price: newPrice };
+    });
+  };
+
+  const handleCogsChange = (e) => {
+    const newCogs = e.target.value;
+    setForm((prev) => ({ ...prev, cogs: newCogs }));
+    const priceNum = Number(form.price || 0);
+    if (priceNum > 0 && newCogs !== "" && !Number.isNaN(Number(newCogs))) {
+      const pct = (Number(newCogs) / priceNum) * 100;
+      setCogsPercent(Number.isInteger(pct) ? String(pct) : pct.toFixed(1));
+    } else if (newCogs === "") {
+      setCogsPercent("");
+    }
+  };
+
+  const applyCogsPercent = (pctValue) => {
+    setCogsPercent(pctValue);
+    const numPct = Number(pctValue);
+    if (pctValue === "" || Number.isNaN(numPct)) return;
+    const priceNum = Number(form.price || 0);
+    if (priceNum > 0) {
+      const calcCogs = ((priceNum * numPct) / 100).toFixed(2);
+      setForm((prev) => ({ ...prev, cogs: calcCogs }));
+      setErrors((prev) => ({ ...prev, cogs: undefined }));
+    }
+  };
 
   // When editing item and rawMaterials are loaded, pre-populate tracking state
   useEffect(() => {
@@ -398,16 +448,14 @@ function ItemForm({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-bold text-[#3d0c02]">
-                Price
+                Retail Price (₹)
               </label>
               <input
                 type="number"
                 min="0"
                 step="0.01"
                 value={form.price}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, price: e.target.value }))
-                }
+                onChange={handlePriceChange}
                 placeholder="0.00"
                 className="h-11 w-full rounded-xl border border-[#ded9d3] bg-[#fef9f2] px-3 outline-none focus:border-[#E8A020]"
               />
@@ -419,21 +467,82 @@ function ItemForm({
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-bold text-[#3d0c02]">
-                COGS{" "}
-                <span className="font-normal text-[#54433f]">(optional)</span>
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.cogs}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, cogs: e.target.value }))
-                }
-                placeholder="Cost of Goods Sold"
-                className="h-11 w-full rounded-xl border border-[#ded9d3] bg-[#fef9f2] px-3 outline-none focus:border-[#E8A020]"
-              />
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-bold text-[#3d0c02]">
+                  COGS{" "}
+                  <span className="font-normal text-[#54433f]">(Cost Price)</span>
+                </label>
+                {cogsPercent && Number(cogsPercent) > 0 ? (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#f3e7cb] text-[#8c5307]">
+                    {cogsPercent}% of Retail
+                  </span>
+                ) : null}
+              </div>
+
+              {/* Side-by-side COGS amount & Percentage Dropdown Select */}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#8c5307]">
+                    ₹
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.cogs}
+                    onChange={handleCogsChange}
+                    placeholder="0.00"
+                    className="h-11 w-full rounded-xl border border-[#ded9d3] bg-[#fef9f2] pl-7 pr-3 outline-none focus:border-[#E8A020]"
+                  />
+                </div>
+                <div className="w-44">
+                  <select
+                    value={cogsPercent || ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val) {
+                        setCogsPercent("");
+                        setForm((prev) => ({ ...prev, cogs: "" }));
+                      } else {
+                        applyCogsPercent(val);
+                      }
+                    }}
+                    className="h-11 w-full rounded-xl border border-[#ded9d3] bg-[#fef9f2] px-3 font-semibold text-xs text-[#3d0c02] outline-none focus:border-[#E8A020] cursor-pointer"
+                  >
+                    <option value="">Select % of Retail</option>
+                    {cogsPercent &&
+                    !percentagePresets.map(String).includes(String(cogsPercent)) ? (
+                      <option value={cogsPercent}>
+                        Current ({cogsPercent}%)
+                      </option>
+                    ) : null}
+                    {percentagePresets.map((pct) => (
+                      <option key={pct} value={String(pct)}>
+                        {pct}% of Retail
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Live Gross Profit & Margin Display */}
+              {Number(form.price) > 0 && Number(form.cogs) > 0 ? (
+                <div className="mt-2 flex items-center justify-between text-xs px-2.5 py-1.5 rounded-lg bg-[#eaf7ee] text-[#1b6b33] border border-[#c4e8ce]">
+                  <span>
+                    Gross Profit:{" "}
+                    <strong className="font-bold">
+                      ₹{(Number(form.price) - Number(form.cogs)).toFixed(2)}
+                    </strong>
+                  </span>
+                  <span>
+                    Margin:{" "}
+                    <strong className="font-bold">
+                      {((1 - Number(form.cogs) / Number(form.price)) * 100).toFixed(1)}%
+                    </strong>
+                  </span>
+                </div>
+              ) : null}
+
               {errors.cogs ? (
                 <p className="mt-1 text-xs font-bold text-red-600">
                   {errors.cogs}
