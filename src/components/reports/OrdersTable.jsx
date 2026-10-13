@@ -49,6 +49,7 @@ export default function OrdersTable({
   page,
   setPage,
   limit,
+  setLimit,
 }) {
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -83,8 +84,9 @@ export default function OrdersTable({
         </h2>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-[#d9c1bc]/20 bg-white shadow-sm">
-        <div className="hidden grid-cols-[70px_130px_120px_1fr_90px_120px_90px_90px_95px] gap-2 border-b border-[#f0ece6] bg-[#faf7f3] px-4 py-2.5 text-[11px] font-bold uppercase tracking-widest text-[#54433f]/60 md:grid">
+      <div className="flex flex-col overflow-hidden rounded-2xl border border-[#d9c1bc]/20 bg-white shadow-sm">
+        {/* Sticky Desktop Header */}
+        <div className="sticky top-0 z-10 hidden shrink-0 grid-cols-[70px_130px_120px_1fr_90px_120px_90px_90px_95px] gap-2 border-b border-[#f0ece6] bg-[#faf7f3] px-4 py-2.5 text-[11px] font-bold uppercase tracking-widest text-[#54433f]/60 shadow-[0_1px_2px_rgba(0,0,0,0.03)] md:grid">
           <span>Token</span>
           <span>Order No</span>
           <span>KOT No</span>
@@ -96,165 +98,193 @@ export default function OrdersTable({
           <span>Status</span>
         </div>
 
-        {ordersLoading ? (
-          <div className="divide-y divide-[#f0ece6]">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="flex items-center gap-2 px-4 py-3 animate-pulse">
-                <div className="h-4 w-12 rounded bg-[#f3ede7]" />
-                <div className="h-4 flex-grow rounded bg-[#f3ede7]" />
-                <div className="h-4 w-24 rounded bg-[#f3ede7]" />
-              </div>
-            ))}
-          </div>
-        ) : ordersError ? (
-          <p className="px-4 py-6 text-[13px] text-[#a12c7b]">
-            {ordersQueryError?.response?.data?.message ||
-              ordersQueryError?.message ||
-              "Failed to load orders."}
-          </p>
-        ) : orderRows.length === 0 ? (
-          <div className="flex flex-col items-center py-12 text-[#54433f]/40">
-            <span className="text-[36px]">🧾</span>
-            <p className="mt-2 text-[14px] font-semibold">No orders found</p>
-            <p className="text-[12px]">Try a different date range</p>
-          </div>
-        ) : (
-          <>
-            <div className="hidden divide-y divide-[#f0ece6] md:block">
-              {orderRows.map((order) => {
-                const orderCogs = (order.items || []).reduce(
-                  (sum, i) => sum + (Number(i.cogs) || 0) * (Number(i.quantity) || 0),
-                  0
-                );
-                return (
-                  <div
-                    key={order.id}
-                    onClick={() => {
-                      setSelectedOrderId(order.id);
-                      setModalOpen(true);
-                    }}
-                    className="grid grid-cols-[70px_130px_120px_1fr_90px_120px_90px_90px_95px] items-center gap-2 px-4 py-3 text-[13px] transition hover:bg-[#faf7f3] cursor-pointer"
-                  >
-                    <span className="font-bold text-[#3d0c02]">#{order.tokenNo}</span>
-                    <span className="font-semibold text-[#1d1c18]">{order.orderNo || "—"}</span>
-                    <span className="font-semibold text-[#54433f]/80">{order.kot?.kotNo || "—"}</span>
-                    <span className="truncate text-[#54433f]">
-                      {order.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
-                    </span>
-                    <span className="font-semibold text-[#7a4d00]">
-                      {orderCogs > 0 ? `₹${orderCogs.toLocaleString("en-IN")}` : <span className="text-[#54433f]/30">—</span>}
-                    </span>
-                    <div className="flex flex-col text-[11px] leading-tight text-[#54433f]/70">
-                      <span className="font-semibold text-[#1d1c18]">
-                        {formatDateWithDay(order.orderTime, { year: undefined })}
-                      </span>
-                      <span className="text-[10px] text-[#54433f]/60">
-                        {formatTime(order.orderTime)}
-                      </span>
-                    </div>
-                    <span className="font-bold text-[#1d1c18]">
-                      ₹{order.totalPaid.toLocaleString("en-IN")}
-                    </span>
-                    <PaymentMethodBadge method={order.paymentMethod} />
-                    <StatusBadge status={order.status} />
-                  </div>
-                );
-              })}
+        {/* Scrollable Rows Container (Standard fixed height with smooth internal scrolling) */}
+        <div className="table-scroll max-h-[520px] min-h-[180px] overflow-y-auto overscroll-contain">
+          {ordersLoading ? (
+            <div className="divide-y divide-[#f0ece6]">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="flex items-center gap-2 px-4 py-3 animate-pulse">
+                  <div className="h-4 w-12 rounded bg-[#f3ede7]" />
+                  <div className="h-4 flex-grow rounded bg-[#f3ede7]" />
+                  <div className="h-4 w-24 rounded bg-[#f3ede7]" />
+                </div>
+              ))}
             </div>
-
-            <div className="divide-y divide-[#f0ece6] md:hidden">
-              {orderRows.map((order) => {
-                const orderCogs = (order.items || []).reduce(
-                  (sum, i) => sum + (Number(i.cogs) || 0) * (Number(i.quantity) || 0),
-                  0
-                );
-                return (
-                  <div
-                    key={order.id}
-                    onClick={() => {
-                      setSelectedOrderId(order.id);
-                      setModalOpen(true);
-                    }}
-                    className="space-y-3 px-4 py-4 cursor-pointer hover:bg-[#faf7f3]/50 transition"
-                  >
-                    <div className="flex items-center justify-between">
+          ) : ordersError ? (
+            <p className="px-4 py-6 text-[13px] text-[#a12c7b]">
+              {ordersQueryError?.response?.data?.message ||
+                ordersQueryError?.message ||
+                "Failed to load orders."}
+            </p>
+          ) : orderRows.length === 0 ? (
+            <div className="flex flex-col items-center py-12 text-[#54433f]/40">
+              <span className="text-[36px]">🧾</span>
+              <p className="mt-2 text-[14px] font-semibold">No orders found</p>
+              <p className="text-[12px]">Try a different date range</p>
+            </div>
+          ) : (
+            <>
+              <div className="hidden divide-y divide-[#f0ece6] md:block">
+                {orderRows.map((order) => {
+                  const orderCogs = (order.items || []).reduce(
+                    (sum, i) => sum + (Number(i.cogs) || 0) * (Number(i.quantity) || 0),
+                    0
+                  );
+                  return (
+                    <div
+                      key={order.id}
+                      onClick={() => {
+                        setSelectedOrderId(order.id);
+                        setModalOpen(true);
+                      }}
+                      className="grid grid-cols-[70px_130px_120px_1fr_90px_120px_90px_90px_95px] items-center gap-2 px-4 py-3 text-[13px] transition hover:bg-[#faf7f3] cursor-pointer"
+                    >
                       <span className="font-bold text-[#3d0c02]">#{order.tokenNo}</span>
-                      <StatusBadge status={order.status} />
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#54433f]/80 font-bold bg-[#faf7f3] px-2.5 py-1.5 rounded-xl border border-[#f0ece6]">
-                      <span>Order: {order.orderNo || "—"}</span>
-                      {order.kot?.kotNo && <span>• KOT: {order.kot.kotNo}</span>}
-                    </div>
-
-                    <p className="text-[13px] text-[#54433f]">
-                      {order.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
-                    </p>
-
-                    <div className="flex flex-wrap items-center gap-3 text-[12px] text-[#54433f]/70">
-                      <span>
-                        {formatDateWithDay(order.orderTime, { year: undefined })} • {formatTime(order.orderTime)}
+                      <span className="font-semibold text-[#1d1c18]">{order.orderNo || "—"}</span>
+                      <span className="font-semibold text-[#54433f]/80">{order.kot?.kotNo || "—"}</span>
+                      <span className="truncate text-[#54433f]">
+                        {order.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
                       </span>
+                      <span className="font-semibold text-[#7a4d00]">
+                        {orderCogs > 0 ? `₹${orderCogs.toLocaleString("en-IN")}` : <span className="text-[#54433f]/30">—</span>}
+                      </span>
+                      <div className="flex flex-col text-[11px] leading-tight text-[#54433f]/70">
+                        <span className="font-semibold text-[#1d1c18]">
+                          {formatDateWithDay(order.orderTime, { year: undefined })}
+                        </span>
+                        <span className="text-[10px] text-[#54433f]/60">
+                          {formatTime(order.orderTime)}
+                        </span>
+                      </div>
                       <span className="font-bold text-[#1d1c18]">
                         ₹{order.totalPaid.toLocaleString("en-IN")}
                       </span>
-                      {orderCogs > 0 && (
-                        <span className="rounded-full bg-[#feb234]/20 px-2 py-0.5 text-[11px] font-bold text-[#7a4d00]">
-                          COGS ₹{orderCogs.toLocaleString("en-IN")}
-                        </span>
-                      )}
                       <PaymentMethodBadge method={order.paymentMethod} />
+                      <StatusBadge status={order.status} />
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
+                  );
+                })}
+              </div>
 
-        {pagination && pagination.totalPages > 1 && (
+              <div className="divide-y divide-[#f0ece6] md:hidden">
+                {orderRows.map((order) => {
+                  const orderCogs = (order.items || []).reduce(
+                    (sum, i) => sum + (Number(i.cogs) || 0) * (Number(i.quantity) || 0),
+                    0
+                  );
+                  return (
+                    <div
+                      key={order.id}
+                      onClick={() => {
+                        setSelectedOrderId(order.id);
+                        setModalOpen(true);
+                      }}
+                      className="space-y-3 px-4 py-4 cursor-pointer hover:bg-[#faf7f3]/50 transition"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[#3d0c02]">#{order.tokenNo}</span>
+                        <StatusBadge status={order.status} />
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#54433f]/80 font-bold bg-[#faf7f3] px-2.5 py-1.5 rounded-xl border border-[#f0ece6]">
+                        <span>Order: {order.orderNo || "—"}</span>
+                        {order.kot?.kotNo && <span>• KOT: {order.kot.kotNo}</span>}
+                      </div>
+
+                      <p className="text-[13px] text-[#54433f]">
+                        {order.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-3 text-[12px] text-[#54433f]/70">
+                        <span>
+                          {formatDateWithDay(order.orderTime, { year: undefined })} • {formatTime(order.orderTime)}
+                        </span>
+                        <span className="font-bold text-[#1d1c18]">
+                          ₹{order.totalPaid.toLocaleString("en-IN")}
+                        </span>
+                        {orderCogs > 0 && (
+                          <span className="rounded-full bg-[#feb234]/20 px-2 py-0.5 text-[11px] font-bold text-[#7a4d00]">
+                            COGS ₹{orderCogs.toLocaleString("en-IN")}
+                          </span>
+                        )}
+                        <PaymentMethodBadge method={order.paymentMethod} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+
+        {pagination && (
           <div className="flex flex-col gap-3 border-t border-[#f0ece6] px-4 py-3 md:flex-row md:items-center md:justify-between">
-            <p className="text-[12px] text-[#54433f]/60">
-              Showing {(page - 1) * limit + 1}–
-              {Math.min(page * limit, pagination.totalCount)} of {pagination.totalCount}
-            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-[12px] text-[#54433f]/70">
+                Showing {pagination.totalCount === 0 ? 0 : (page - 1) * limit + 1}–
+                {Math.min(page * limit, pagination.totalCount)} of {pagination.totalCount} orders
+              </p>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                disabled={!pagination.hasPrevPage}
-                onClick={() => setPage((p) => p - 1)}
-                className="rounded-lg border border-[#d9c1bc] px-3 py-1.5 text-[12px] font-bold text-[#54433f] transition hover:bg-[#f3ede7] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                ← Prev
-              </button>
-
-              {[...Array(Math.min(pagination.totalPages, 5))].map((_, i) => {
-                const p = i + 1;
-                return (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => setPage(p)}
-                    className={`h-8 w-8 rounded-lg text-[12px] font-bold transition ${page === p
-                      ? "bg-[#3d0c02] text-white"
-                      : "border border-[#d9c1bc] text-[#54433f] hover:bg-[#f3ede7]"
-                      }`}
+              {setLimit && (
+                <div className="flex items-center gap-1.5 text-[12px] text-[#54433f]">
+                  <span className="font-semibold text-[#54433f]/70">Limit:</span>
+                  <select
+                    value={limit}
+                    onChange={(e) => {
+                      setLimit(Number(e.target.value));
+                      setPage(1);
+                    }}
+                    className="rounded-lg border border-[#d9c1bc]/80 bg-[#fef9f2] px-2 py-1 text-[12px] font-bold text-[#3d0c02] shadow-sm transition hover:border-[#3d0c02] focus:border-[#3d0c02] focus:outline-none cursor-pointer"
                   >
-                    {p}
-                  </button>
-                );
-              })}
-
-              <button
-                type="button"
-                disabled={!pagination.hasNextPage}
-                onClick={() => setPage((p) => p + 1)}
-                className="rounded-lg border border-[#d9c1bc] px-3 py-1.5 text-[12px] font-bold text-[#54433f] transition hover:bg-[#f3ede7] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Next →
-              </button>
+                    {[20, 50, 100, 200, 500, 1000, 1500, 2000].map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt} orders
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
+
+            {pagination.totalPages > 1 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!pagination.hasPrevPage}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="rounded-lg border border-[#d9c1bc] px-3 py-1.5 text-[12px] font-bold text-[#54433f] transition hover:bg-[#f3ede7] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  ← Prev
+                </button>
+
+                {[...Array(Math.min(pagination.totalPages, 5))].map((_, i) => {
+                  const p = i + 1;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setPage(p)}
+                      className={`h-8 w-8 rounded-lg text-[12px] font-bold transition ${
+                        page === p
+                          ? "bg-[#3d0c02] text-white"
+                          : "border border-[#d9c1bc] text-[#54433f] hover:bg-[#f3ede7]"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+
+                <button
+                  type="button"
+                  disabled={!pagination.hasNextPage}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="rounded-lg border border-[#d9c1bc] px-3 py-1.5 text-[12px] font-bold text-[#54433f] transition hover:bg-[#f3ede7] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

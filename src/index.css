@@ -102,6 +102,31 @@ textarea {
   scrollbar-width: none;  /* Firefox */
 }
 
+/* Scrollable container custom scrollbar */
+.table-scroll {
+  -ms-overflow-style: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #d9c1bc #faf7f3 !important;
+}
+
+.table-scroll::-webkit-scrollbar {
+  display: block !important;
+  width: 6px;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+  background: #faf7f3;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  background: #d9c1bc;
+  border-radius: 9999px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #3d0c02;
+}
+
 /* Custom Print Styles for Clean PDF Export */
 @media print {
   header,

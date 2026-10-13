@@ -18,6 +18,7 @@ import { printBoth, printBill, printKOT } from "../utils/printHelpers";
 import { useInventoryQuery } from "../hooks/inventory/useInventoryQuery";
 import { useRawMaterialsQuery } from "../hooks/rawMaterials/useRawMaterialsQuery";
 import ProfileDropdown from "../components/layout/ProfileDropdown";
+import { useAuthStore } from "../store/authStore";
 
 const formatMoney = (value) => {
   const numeric = Number(value || 0);
@@ -118,6 +119,7 @@ const CartItemCard = memo(({ item, onIncrease, onDecrease, stockCount }) => {
 
 function POSPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [toast, setToast] = useState(null);
 
@@ -132,6 +134,9 @@ function POSPage() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [lastSavedOrder, setLastSavedOrder] = useState(null);
 
+  // Track active user for account-switch reset
+  const activeUserId = useAuthStore((state) => state.user?.id);
+
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -145,7 +150,7 @@ function POSPage() {
   const todaySession = useSessionStore((state) => state.todaySession);
   const isSessionChecked = useSessionStore((state) => state.isSessionChecked);
   const fetchTodaySession = useSessionStore((state) => state.fetchTodaySession);
-  const isSessionOpen = todaySession?.status === "OPEN";
+  const isSessionOpen = todaySession?.status?.toUpperCase() === "OPEN";
   const discountAmount = useCartStore((state) => state.discountAmount);
   const setDiscountAmount = useCartStore((state) => state.setDiscountAmount);
 
@@ -228,12 +233,31 @@ function POSPage() {
   }, [categories, selectedCategoryId]);
 
 
-  // Fetch session on mount if it hasn't been checked yet (e.g. after login)
+  // ── Account-switch guard ────────────────────────────────────────────────────
+  // When the logged-in user changes (account switch), hard-reset all local
+  // per-order state so that no data from the previous account leaks through.
+  const prevUserIdRef = useRef(activeUserId);
   useEffect(() => {
-    if (!isSessionChecked) {
-      fetchTodaySession();
+    if (prevUserIdRef.current !== undefined && prevUserIdRef.current !== activeUserId) {
+      // User actually changed — wipe in-flight order state
+      setLastSavedOrder(null);
+      setLastKot(null);
+      setIsCartDirty(false);
+      setSaveLoading(false);
+      setKotLoading(false);
+      setBillLoading(false);
+      setBothLoading(false);
+      setToast(null);
+      // Also clear the TanStack query cache so stale data from old account doesn't show
+      queryClient.clear();
     }
-  }, [isSessionChecked, fetchTodaySession]);
+    prevUserIdRef.current = activeUserId;
+  }, [activeUserId]);
+
+  // Fetch session on mount to ensure fresh status
+  useEffect(() => {
+    fetchTodaySession();
+  }, [fetchTodaySession]);
 
   useEffect(() => {
     if (!toast) return;
@@ -695,7 +719,6 @@ function POSPage() {
     navigate(`/orders?${params.toString()}`);
   };
 
-  const queryClient = useQueryClient();
 
   const goToOrdersPage = () => {
     const params = new URLSearchParams({
@@ -787,33 +810,34 @@ function POSPage() {
 
   return (
     <>
-      <div className="flex min-h-screen lg:h-screen flex-col lg:overflow-hidden bg-[#fef9f2] text-[#3d0c02]">
-        <header className="flex h-auto min-h-[56px] shrink-0 flex-wrap items-center justify-between gap-y-3 bg-[#3d0c02] px-4 py-3 md:px-6 md:py-0 text-white">
-          <div className="flex flex-wrap items-center gap-2 md:gap-4 w-full md:w-auto">
+      <div className="flex min-h-screen md:h-screen flex-col md:overflow-hidden bg-[#fef9f2] text-[#3d0c02]">
+        <header className="flex h-14 shrink-0 items-center justify-between bg-[#3d0c02] px-3 md:px-4 lg:px-6 text-white shadow-md">
+          <div className="flex items-center gap-2 md:gap-3 min-w-0">
 
             {/* Mobile Hamburger Button */}
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}
-              className="md:hidden p-2 -ml-2 text-white/80 hover:text-white"
+              className="md:hidden p-1.5 -ml-1 text-white/80 hover:text-white shrink-0"
+              aria-label="Open menu"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
 
-            <span className="hidden md:inline border-l border-white/20 pl-2 md:pl-4 text-xs md:text-sm opacity-60">
+            <span className="hidden lg:inline border-l border-white/20 pl-2 lg:pl-3 text-xs opacity-60 shrink-0">
               {todaySession?.date
                 ? new Date(todaySession.date).toLocaleDateString()
                 : "Today"}
             </span>
 
-            <div className="ml-auto md:ml-4 flex flex-1 md:flex-initial items-center gap-2">
-              <div className="relative w-full md:w-40">
+            <div className="flex items-center gap-1.5 md:gap-2">
+              <div className="relative w-28 md:w-28 lg:w-36 xl:w-40">
                 <input
                   value={kotSearch}
                   onChange={(e) => setKotSearch(e.target.value)}
-                  className="h-8 w-full rounded-lg border border-white/20 bg-white/10 px-3 text-sm text-white placeholder:text-white/40 focus:outline-none"
+                  className="h-8 w-full rounded-lg border border-white/20 bg-white/10 px-2.5 text-xs text-white placeholder:text-white/40 focus:outline-none"
                   placeholder="Search KOT"
                   type="text"
                 />
@@ -829,11 +853,11 @@ function POSPage() {
                 />
               </div>
 
-              <div className="relative w-full md:w-40">
+              <div className="relative w-28 md:w-28 lg:w-36 xl:w-40">
                 <input
                   value={orderSearch}
                   onChange={(e) => setOrderSearch(e.target.value)}
-                  className="h-8 w-full rounded-lg border border-white/20 bg-white/10 px-3 text-sm text-white placeholder:text-white/40 focus:outline-none"
+                  className="h-8 w-full rounded-lg border border-white/20 bg-white/10 px-2.5 text-xs text-white placeholder:text-white/40 focus:outline-none"
                   placeholder="Search Order"
                   type="text"
                 />
@@ -853,41 +877,35 @@ function POSPage() {
             </div>
           </div>
 
-          {/* Desktop Right Side Buttons */}
-          <div className="hidden md:flex items-center gap-3 justify-end">
-            <button
-              type="button"
-              disabled={isSessionOpen}
-              onClick={() => {
-                if (shouldClearCartOnLeave()) resetCurrentOrderFlow();
-                navigate("/open-sales");
-              }}
-              title={
-                isSessionOpen
-                  ? "Sales session is already open today"
-                  : "Click to open today's sales session"
-              }
-              className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all shadow-sm ${isSessionOpen
-                ? "border border-white/20 bg-white/5 text-white/40 cursor-not-allowed"
-                : "bg-[#feb234] hover:bg-[#e8a020] text-[#3d0c02] font-extrabold shadow-sm active:scale-95"
-                }`}
-            >
-              {isSessionOpen ? "Open Sale Session" : "+ Open Sale Session"}
-            </button>
+          {/* Desktop & iPad Right Side Buttons */}
+          <div className="hidden md:flex items-center gap-1.5 lg:gap-3 justify-end shrink-0">
+            {!isSessionOpen && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (shouldClearCartOnLeave()) resetCurrentOrderFlow();
+                  navigate("/open-sales");
+                }}
+                title="Click to open today's sales session"
+                className="rounded-lg bg-[#feb234] hover:bg-[#e8a020] text-[#3d0c02] px-2.5 lg:px-3 py-1.5 text-xs font-extrabold shadow-sm transition-all active:scale-95 shrink-0"
+              >
+                + Open Sale Session
+              </button>
+            )}
 
             {isSessionOpen && todaySession?.openingCash !== undefined && (
-              <div className="flex items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs font-bold text-amber-200 shadow-inner">
-                <span>Cash:</span>
-                <span className="text-sm font-extrabold text-white">
+              <div className="flex items-center gap-1 rounded-lg border border-amber-400/30 bg-amber-400/10 px-2 lg:px-2.5 py-1 text-xs font-bold text-amber-200 shadow-inner shrink-0">
+                <span className="hidden sm:inline">Cash:</span>
+                <span className="text-xs font-extrabold text-white">
                   ₹{formatMoney(todaySession.openingCash)}
                 </span>
               </div>
             )}
 
-            <div className="flex items-center gap-2 border-l border-white/20 pl-3">
+            <div className="flex items-center gap-1.5 lg:gap-2 border-l border-white/20 pl-2 lg:pl-3 shrink-0">
               <button
                 type="button"
-                className="opacity-80 hover:opacity-100 transition"
+                className="opacity-80 hover:opacity-100 transition p-1"
                 onClick={() => window.location.reload()}
                 title="Refresh"
               >
@@ -897,7 +915,7 @@ function POSPage() {
               <button
                 type="button"
                 onClick={goToSettingsPage}
-                className="opacity-80 transition hover:opacity-100"
+                className="opacity-80 transition hover:opacity-100 p-1"
                 title="Settings"
                 aria-label="Open settings"
               >
@@ -912,23 +930,30 @@ function POSPage() {
                 navigate("/close-sales");
               }}
               title="Close sale session"
-              className="rounded-lg border border-white/30 px-3 py-1.5 text-xs font-bold text-white transition-all hover:bg-white/10"
+              className={`rounded-lg px-2.5 lg:px-3 py-1.5 text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 ${
+                isSessionOpen
+                  ? "bg-red-600 hover:bg-red-700 text-white shadow-sm active:scale-95"
+                  : "border border-white/40 bg-white/10 hover:bg-white/20 text-white"
+              }`}
             >
+              {isSessionOpen && (
+                <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse"></span>
+              )}
               Close Sale
             </button>
 
             <button
               type="button"
               onClick={goToOrdersPage}
-              className="relative rounded-lg border border-white/30 px-5 py-2 text-xs font-bold"
+              className="relative rounded-lg border border-white/30 px-3 lg:px-4 py-1.5 text-xs font-bold shrink-0"
             >
               Orders
-              <div className="absolute -right-2 -top-2 flex h-5 min-w-[20px] items-center justify-center">
+              <div className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[18px] items-center justify-center">
                 {unpaidCount > 0 && (
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
                 )}
                 <span
-                  className={`relative inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold text-white shadow-sm ring-2 ring-[#3d0c02] ${unpaidCount > 0 ? "bg-red-500" : "bg-gray-500"
+                  className={`relative inline-flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white shadow-sm ring-1 ring-[#3d0c02] ${unpaidCount > 0 ? "bg-red-500" : "bg-gray-500"
                     }`}
                 >
                   {unpaidCount}
@@ -961,22 +986,20 @@ function POSPage() {
 
               <h2 className="text-xl font-bold mb-8">Menu</h2>
 
-              <div className="flex flex-col gap-5">
-                <button
-                  type="button"
-                  disabled={isSessionOpen}
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    if (shouldClearCartOnLeave()) resetCurrentOrderFlow();
-                    navigate("/open-sales");
-                  }}
-                  className={`w-full rounded-xl px-4 py-2.5 font-extrabold text-center text-sm transition-all ${isSessionOpen
-                    ? "bg-white/5 text-white/40 cursor-not-allowed border border-white/10"
-                    : "bg-[#feb234] hover:bg-[#e8a020] text-[#3d0c02] shadow-sm active:scale-95"
-                    }`}
-                >
-                  {isSessionOpen ? "Open Sale Session" : "+ Open Sale Session"}
-                </button>
+              <div className="flex flex-col gap-4">
+                {!isSessionOpen && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      if (shouldClearCartOnLeave()) resetCurrentOrderFlow();
+                      navigate("/open-sales");
+                    }}
+                    className="w-full rounded-xl bg-[#feb234] hover:bg-[#e8a020] text-[#3d0c02] px-4 py-2.5 font-extrabold text-center text-sm shadow-sm transition-all active:scale-95"
+                  >
+                    + Open Sale Session
+                  </button>
+                )}
 
                 {isSessionOpen && todaySession?.openingCash !== undefined && (
                   <div className="rounded-lg border border-amber-400/30 bg-amber-400/10 p-2.5 text-xs font-bold text-amber-200">
@@ -1007,9 +1030,14 @@ function POSPage() {
                     if (shouldClearCartOnLeave()) resetCurrentOrderFlow();
                     navigate("/close-sales");
                   }}
-                  className="rounded-xl border border-white/30 px-4 py-3 font-bold text-left text-sm text-white"
+                  className={`rounded-xl px-4 py-3 font-bold text-left text-sm transition flex items-center justify-between ${
+                    isSessionOpen
+                      ? "bg-red-600 hover:bg-red-700 text-white shadow-sm"
+                      : "border border-white/30 text-white hover:bg-white/10"
+                  }`}
                 >
-                  Close Sale
+                  <span>Close Sale</span>
+                  <span>🔒</span>
                 </button>
 
                 <div className="h-px bg-white/10 w-full" />
@@ -1034,9 +1062,9 @@ function POSPage() {
           </div>
         )}
 
-        <main className="flex flex-1 flex-col lg:flex-row lg:overflow-hidden">
+        <main className="flex flex-1 flex-col md:flex-row md:overflow-hidden">
           {/* ── Left: Product catalogue ── */}
-          <section className="flex w-full lg:w-[60%] flex-col border-b lg:border-b-0 lg:border-r border-[#ded9d3] overflow-hidden">
+          <section className="flex w-full md:w-[58%] lg:w-[60%] flex-col border-b md:border-b-0 md:border-r border-[#ded9d3] overflow-hidden">
             <div className="border-b border-[#ded9d3] bg-white/50 p-3 lg:p-4 shrink-0 flex items-center gap-3">
               <div className="flex-1">
                 <input
@@ -1080,7 +1108,7 @@ function POSPage() {
 
             <div
               key={animKey}
-              className={`grid flex-1 grid-cols-2 md:grid-cols-3 content-start gap-4 lg:gap-6 overflow-y-auto p-4 lg:p-6 min-h-[50vh] lg:min-h-0 ${slideDirection === "left" ? "animate-slide-left" : "animate-slide-right"
+              className={`grid flex-1 grid-cols-2 lg:grid-cols-3 content-start gap-3 md:gap-4 lg:gap-6 overflow-y-auto p-3 md:p-4 lg:p-6 min-h-[50vh] md:min-h-0 ${slideDirection === "left" ? "animate-slide-left" : "animate-slide-right"
                 }`}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
@@ -1132,7 +1160,7 @@ function POSPage() {
           </section>
 
           {/* ── Right: Cart ── */}
-          <section className="flex w-full lg:w-[40%] flex-col bg-white min-h-[50vh] lg:min-h-0">
+          <section className="flex w-full md:w-[42%] lg:w-[40%] flex-col bg-white min-h-[50vh] md:min-h-0 overflow-hidden">
             {/* Order type tabs */}
             <div className="border-b border-[#ded9d3] bg-[#f8f3ec]/50 p-3">
               <div className="flex items-center overflow-hidden rounded-xl border border-[#ded9d3] bg-white">

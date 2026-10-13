@@ -16,9 +16,15 @@ export async function closeTodaySalesSession(payload) {
   return response.data.data;
 }
 
-export async function getSalesSessionOverview(preset) {
-  const response = await api.get("/api/sales-session/overview", {
-    params: { preset },
-  });
+export async function getSalesSessionOverview(param) {
+  let params = {};
+  if (typeof param === "object" && param !== null) {
+    params = param;
+  } else if (param === "current" || param === "today") {
+    params = { preset: param };
+  } else if (param) {
+    params = { sessionId: param, preset: param };
+  }
+  const response = await api.get("/api/sales-session/overview", { params });
   return response.data.data;
 }
