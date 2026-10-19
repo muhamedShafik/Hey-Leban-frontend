@@ -810,34 +810,33 @@ function POSPage() {
 
   return (
     <>
-      <div className="flex min-h-screen md:h-screen flex-col md:overflow-hidden bg-[#fef9f2] text-[#3d0c02]">
-        <header className="flex h-14 shrink-0 items-center justify-between bg-[#3d0c02] px-3 md:px-4 lg:px-6 text-white shadow-md">
+      <div className="flex min-h-screen lg:h-screen flex-col lg:overflow-hidden bg-[#fef9f2] text-[#3d0c02]">
+        <header className="flex h-14 min-h-[56px] shrink-0 items-center justify-between gap-2 md:gap-3 bg-[#3d0c02] px-3 sm:px-4 md:px-6 text-white">
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
-
             {/* Mobile Hamburger Button */}
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}
-              className="md:hidden p-1.5 -ml-1 text-white/80 hover:text-white shrink-0"
-              aria-label="Open menu"
+              className="md:hidden p-2 -ml-1 text-white/80 hover:text-white shrink-0"
+              aria-label="Open navigation menu"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
 
-            <span className="hidden lg:inline border-l border-white/20 pl-2 lg:pl-3 text-xs opacity-60 shrink-0">
+            <span className="hidden xl:inline border-l border-white/20 pl-3 text-xs opacity-60 shrink-0">
               {todaySession?.date
                 ? new Date(todaySession.date).toLocaleDateString()
                 : "Today"}
             </span>
 
-            <div className="flex items-center gap-1.5 md:gap-2">
-              <div className="relative w-28 md:w-28 lg:w-36 xl:w-40">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="relative w-28 sm:w-32 md:w-32 lg:w-36 xl:w-40 shrink-0">
                 <input
                   value={kotSearch}
                   onChange={(e) => setKotSearch(e.target.value)}
-                  className="h-8 w-full rounded-lg border border-white/20 bg-white/10 px-2.5 text-xs text-white placeholder:text-white/40 focus:outline-none"
+                  className="h-8 w-full rounded-lg border border-white/20 bg-white/10 px-2.5 text-xs sm:text-sm text-white placeholder:text-white/40 focus:outline-none"
                   placeholder="Search KOT"
                   type="text"
                 />
@@ -853,11 +852,11 @@ function POSPage() {
                 />
               </div>
 
-              <div className="relative w-28 md:w-28 lg:w-36 xl:w-40">
+              <div className="relative w-28 sm:w-32 md:w-32 lg:w-36 xl:w-40 shrink-0">
                 <input
                   value={orderSearch}
                   onChange={(e) => setOrderSearch(e.target.value)}
-                  className="h-8 w-full rounded-lg border border-white/20 bg-white/10 px-2.5 text-xs text-white placeholder:text-white/40 focus:outline-none"
+                  className="h-8 w-full rounded-lg border border-white/20 bg-white/10 px-2.5 text-xs sm:text-sm text-white placeholder:text-white/40 focus:outline-none"
                   placeholder="Search Order"
                   type="text"
                 />
@@ -872,54 +871,50 @@ function POSPage() {
                   }}
                 />
               </div>
-
-              <ProfileDropdown className="md:hidden shrink-0" />
             </div>
           </div>
 
-          {/* Desktop & iPad Right Side Buttons */}
-          <div className="hidden md:flex items-center gap-1.5 lg:gap-3 justify-end shrink-0">
-            {!isSessionOpen && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (shouldClearCartOnLeave()) resetCurrentOrderFlow();
-                  navigate("/open-sales");
-                }}
-                title="Click to open today's sales session"
-                className="rounded-lg bg-[#feb234] hover:bg-[#e8a020] text-[#3d0c02] px-2.5 lg:px-3 py-1.5 text-xs font-extrabold shadow-sm transition-all active:scale-95 shrink-0"
-              >
-                + Open Sale Session
-              </button>
-            )}
+          {/* Right Side Controls - Always firmly pinned to the right edge */}
+          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-2.5 lg:gap-3 ml-auto shrink-0 justify-end">
+            <button
+              type="button"
+              disabled={isSessionOpen}
+              onClick={() => {
+                if (shouldClearCartOnLeave()) resetCurrentOrderFlow();
+                navigate("/open-sales");
+              }}
+              title={
+                isSessionOpen
+                  ? "Sales session is already open today"
+                  : "Click to open today's sales session"
+              }
+              className={`hidden md:inline-flex rounded-lg px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all shadow-sm ${
+                isSessionOpen
+                  ? "border border-white/20 bg-white/5 text-white/40 cursor-not-allowed"
+                  : "bg-[#feb234] hover:bg-[#e8a020] text-[#3d0c02] font-extrabold shadow-sm active:scale-95"
+              }`}
+            >
+              <span className="hidden lg:inline">{isSessionOpen ? "Open Sale Session" : "+ Open Sale Session"}</span>
+              <span className="lg:hidden">{isSessionOpen ? "Session Open" : "+ Open Sale"}</span>
+            </button>
 
             {isSessionOpen && todaySession?.openingCash !== undefined && (
-              <div className="flex items-center gap-1 rounded-lg border border-amber-400/30 bg-amber-400/10 px-2 lg:px-2.5 py-1 text-xs font-bold text-amber-200 shadow-inner shrink-0">
-                <span className="hidden sm:inline">Cash:</span>
-                <span className="text-xs font-extrabold text-white">
+              <div className="hidden md:flex items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-400/10 px-2 sm:px-2.5 py-1.5 text-xs font-bold text-amber-200 shadow-inner shrink-0">
+                <span className="hidden lg:inline">Cash:</span>
+                <span className="text-xs sm:text-sm font-extrabold text-white">
                   ₹{formatMoney(todaySession.openingCash)}
                 </span>
               </div>
             )}
 
-            <div className="flex items-center gap-1.5 lg:gap-2 border-l border-white/20 pl-2 lg:pl-3 shrink-0">
+            <div className="hidden md:flex items-center gap-1.5 border-l border-white/20 pl-2 lg:pl-3">
               <button
                 type="button"
-                className="opacity-80 hover:opacity-100 transition p-1"
+                className="opacity-80 hover:opacity-100 transition p-1 text-sm"
                 onClick={() => window.location.reload()}
                 title="Refresh"
               >
                 ↺
-              </button>
-
-              <button
-                type="button"
-                onClick={goToSettingsPage}
-                className="opacity-80 transition hover:opacity-100 p-1"
-                title="Settings"
-                aria-label="Open settings"
-              >
-                ⚙
               </button>
             </div>
 
@@ -930,11 +925,7 @@ function POSPage() {
                 navigate("/close-sales");
               }}
               title="Close sale session"
-              className={`rounded-lg px-2.5 lg:px-3 py-1.5 text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 ${
-                isSessionOpen
-                  ? "bg-red-600 hover:bg-red-700 text-white shadow-sm active:scale-95"
-                  : "border border-white/40 bg-white/10 hover:bg-white/20 text-white"
-              }`}
+              className="hidden md:inline-flex rounded-lg border border-white/30 px-2.5 sm:px-3 py-1.5 text-xs font-bold text-white transition-all hover:bg-white/10 shrink-0"
             >
               {isSessionOpen && (
                 <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse"></span>
@@ -945,23 +936,24 @@ function POSPage() {
             <button
               type="button"
               onClick={goToOrdersPage}
-              className="relative rounded-lg border border-white/30 px-3 lg:px-4 py-1.5 text-xs font-bold shrink-0"
+              className="hidden md:inline-flex relative rounded-lg border border-white/30 px-3 sm:px-4 py-1.5 text-xs font-bold shrink-0"
             >
               Orders
-              <div className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[18px] items-center justify-center">
+              <div className="absolute -right-1.5 -top-1.5 flex h-4.5 min-w-[18px] items-center justify-center">
                 {unpaidCount > 0 && (
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
                 )}
                 <span
-                  className={`relative inline-flex h-4 min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white shadow-sm ring-1 ring-[#3d0c02] ${unpaidCount > 0 ? "bg-red-500" : "bg-gray-500"
-                    }`}
+                  className={`relative inline-flex h-4.5 min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-[#3d0c02] ${
+                    unpaidCount > 0 ? "bg-red-500" : "bg-gray-500"
+                  }`}
                 >
                   {unpaidCount}
                 </span>
               </div>
             </button>
 
-            <ProfileDropdown />
+            <ProfileDropdown className="shrink-0" />
           </div>
         </header>
 
@@ -1042,13 +1034,7 @@ function POSPage() {
 
                 <div className="h-px bg-white/10 w-full" />
 
-                <button
-                  type="button"
-                  onClick={goToSettingsPage}
-                  className="flex items-center gap-3 px-2 py-2 font-bold opacity-80 hover:opacity-100"
-                >
-                  ⚙ Settings
-                </button>
+              
 
                 <button
                   type="button"

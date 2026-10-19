@@ -127,7 +127,7 @@ export default function ProfileDropdown({ theme = "dark", className = "" }) {
             <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-1 ring-white" />
           </div>
 
-          <div className="hidden sm:flex flex-col text-left leading-tight">
+          <div className="hidden lg:flex flex-col text-left leading-tight">
             <span className="text-xs font-bold truncate max-w-[100px]">
               {displayName}
             </span>
@@ -155,7 +155,7 @@ export default function ProfileDropdown({ theme = "dark", className = "" }) {
 
         {/* Dropdown Menu */}
         {isOpen && (
-          <div className="absolute right-0 top-full mt-2.5 w-80 rounded-2xl border border-[#ded9d3] bg-white shadow-2xl z-[200] overflow-hidden text-[#3d0c02] animate-in fade-in zoom-in-95 duration-150">
+          <div className="absolute right-0 top-full mt-2.5 w-80 max-w-[calc(100vw-24px)] rounded-2xl border border-[#ded9d3] bg-white shadow-2xl z-[200] overflow-hidden text-[#3d0c02] animate-in fade-in zoom-in-95 duration-150">
             {/* Header: Currently Active Account */}
             <div className="bg-gradient-to-r from-[#3d0c02] to-[#5a1204] p-4 text-white">
               <div className="flex items-center justify-between text-[11px] font-bold text-white/70 mb-2">
@@ -275,6 +275,18 @@ export default function ProfileDropdown({ theme = "dark", className = "" }) {
 
             {/* Quick Navigation Menu */}
             <div className="p-2 space-y-0.5 text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate("/pos");
+                }}
+                className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left hover:bg-[#f8f3ec] transition-colors"
+              >
+                <span className="text-sm">🏠</span>
+                <span>Home</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => {

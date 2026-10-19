@@ -717,21 +717,21 @@ const InventoryPage = () => {
   return (
     <div className="bg-[#fef9f2] text-[#1d1c18] font-sans min-h-screen">
       {/* Top Nav */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-[#3d0c02] text-white shadow-md flex items-center justify-between w-full px-6 h-16">
-        <div className="flex items-center">
+      <header className="sticky top-0 z-40 bg-[#3d0c02] text-white shadow-md flex items-center justify-between w-full px-4 sm:px-6 py-3">
+        <div className="flex items-center min-w-0">
           <button
             type="button"
             onClick={() => navigate("/settings")}
-            className="flex h-12 w-12 items-center justify-center rounded-full transition hover:bg-white/10 mr-4"
+            className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full transition hover:bg-white/10 mr-3 sm:mr-4 active:scale-95"
             aria-label="Back to Settings"
           >
-            <span className="text-[28px]">←</span>
+            <span className="text-2xl sm:text-[28px]">←</span>
           </button>
-          <div>
-            <span className="text-xl font-bold leading-tight">
+          <div className="min-w-0">
+            <span className="text-lg sm:text-xl font-bold leading-tight block truncate">
               Inventory Management
             </span>
-            <p className="text-white/60 text-xs font-medium hidden sm:block">
+            <p className="text-white/60 text-xs font-medium hidden sm:block truncate">
               Track bases and individual product stock
             </p>
           </div>
@@ -739,7 +739,7 @@ const InventoryPage = () => {
         <ProfileDropdown />
       </header>
 
-      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 pt-24 pb-10">
+      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 pt-6 pb-10">
         {/* Page title */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-[#3d0c02]">Stock Management</h1>

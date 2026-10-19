@@ -3,6 +3,7 @@ import { useState, useMemo } from "react";
 import useBusinessReportQuery from "../hooks/reports/useBusinessReportQuery";
 import { getReportDateDetails, formatDateRangeWithDay } from "../utils/dateUtils";
 import ProfileDropdown from "../components/layout/ProfileDropdown";
+import { exportBusinessReportPdf } from "../utils/pdfExport";
 
 export default function BusinessReportPage() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export default function BusinessReportPage() {
   const startDate = queryParams.get("startDate");
   const endDate = queryParams.get("endDate");
   const dateParam = queryParams.get("date");
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data, isLoading, isError } = useBusinessReportQuery({ sessionId, startDate, endDate });
 
@@ -135,6 +137,17 @@ export default function BusinessReportPage() {
   const maxPeakCount = Math.max(...hoursData.map(h => h.count), 1);
   const peakThreshold = maxPeakCount > 1 ? maxPeakCount * 0.7 : 9999;
 
+  const handleExportPdf = async () => {
+    setIsExporting(true);
+    try {
+      await exportBusinessReportPdf({ report, dateDetails });
+    } catch (err) {
+      console.error("Failed to export PDF", err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="min-h-screen bg-[#fef9f2] flex items-center justify-center">Loading Report...</div>;
   }
@@ -143,32 +156,24 @@ export default function BusinessReportPage() {
     return <div className="min-h-screen bg-[#fef9f2] flex items-center justify-center text-red-500">Failed to load business report.</div>;
   }
 
-
   return (
     <div className="min-h-screen bg-[#fef9f2] font-sans text-[#1d1c18]">
-      <header className="fixed top-0 w-full z-50 bg-[#0e0100] dark:bg-[#3d0c02] text-white dark:text-[#bf715c] font-sans font-bold shadow-md shadow-[0_4px_8px_-2px_rgba(61,12,2,0.08)] flex justify-between items-center px-6 h-16">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="hover:opacity-80">← Back</button>
-          <div className="flex flex-col">
-            <h1 className="text-lg font-bold text-white uppercase tracking-wider">Business Report</h1>
-            <p className="text-[12px] font-semibold text-white/80 normal-case tracking-normal flex items-center gap-1.5 mt-0.5">
+      <header className="sticky top-0 w-full z-50 bg-[#0e0100] dark:bg-[#3d0c02] text-white dark:text-[#bf715c] font-sans font-bold shadow-md shadow-[0_4px_8px_-2px_rgba(61,12,2,0.08)] flex justify-between items-center px-4 sm:px-6 py-3 min-h-[56px] sm:min-h-[64px]">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <button onClick={() => navigate(-1)} className="hover:opacity-80 shrink-0 text-sm sm:text-base">← Back</button>
+          <div className="flex flex-col min-w-0">
+            <h1 className="text-base sm:text-lg font-bold text-white uppercase tracking-wider truncate">Business Report</h1>
+            <p className="text-[11px] sm:text-[12px] font-semibold text-white/80 normal-case tracking-normal flex items-center gap-1.5 mt-0.5 truncate">
               <span>📅</span> {dateDetails.formattedDate}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="flex items-center gap-1.5 rounded-full bg-[#feb234] px-4 py-1.5 text-[12px] font-bold text-[#3d0c02] transition hover:bg-[#ffd06a]"
-          >
-            <span>⬇</span> Export PDF
-          </button>
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <ProfileDropdown />
         </div>
       </header>
 
-      <main className="mt-16 p-6 min-h-screen bg-[#fef9f2] max-w-7xl mx-auto">
+      <main id="business-report-content" className="p-4 sm:p-6 min-h-screen bg-[#fef9f2] max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
           <div className="bg-white p-5 rounded-xl shadow-[0_4px_12px_rgba(61,12,2,0.06)] border border-[#f2ede6]">
             <p className="text-[#54433f] text-xs font-bold uppercase tracking-wider mb-2">Gross Revenue</p>
@@ -515,6 +520,27 @@ export default function BusinessReportPage() {
           </div>
         </div>
       </main>
+
+      {/* Floating Export to PDF Button */}
+      <button
+        type="button"
+        disabled={isExporting || isLoading}
+        onClick={handleExportPdf}
+        className="fixed bottom-[max(1.5rem,calc(env(safe-area-inset-bottom)+1rem))] right-6 z-50 flex items-center gap-2 rounded-full bg-[#feb234] px-5 py-3 text-sm font-extrabold text-[#3d0c02] shadow-[0_8px_24px_rgba(61,12,2,0.25)] hover:bg-[#ffd06a] hover:scale-105 active:scale-95 transition-all disabled:opacity-60 print:hidden cursor-pointer"
+        aria-label="Export to PDF"
+      >
+        {isExporting ? (
+          <>
+            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#3d0c02] border-t-transparent" />
+            <span>Generating...</span>
+          </>
+        ) : (
+          <>
+            <span className="text-base">📄</span>
+            <span>Export PDF</span>
+          </>
+        )}
+      </button>
     </div>
   );
 }

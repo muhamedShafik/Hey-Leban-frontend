@@ -457,39 +457,39 @@ function MenuManagementPage() {
 
     return (
         <div className="min-h-screen bg-[#fef9f2] font-sans text-[#1d1c18]">
-            <header className="fixed left-0 top-0 z-50 flex h-[80px] w-full items-center justify-between bg-[#3d0c02] px-6 text-white shadow-md">
-                <div className="flex items-center gap-4">
+            <header className="sticky top-0 z-50 flex w-full items-center justify-between bg-[#3d0c02] px-4 py-3 sm:px-6 sm:py-4 text-white shadow-md">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                     <button
                         type="button"
                         onClick={() => navigate("/settings")}
-                        className="flex h-12 w-12 items-center justify-center rounded-full transition hover:bg-white/10"
+                        className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full transition hover:bg-white/10 active:scale-95"
                         aria-label="Back to Settings"
                     >
-                        <span className="text-[28px]">←</span>
+                        <span className="text-2xl sm:text-[28px]">←</span>
                     </button>
 
-                    <div className="flex flex-col">
-                        <h1 className="text-[24px] font-bold leading-tight text-white">
+                    <div className="flex flex-col min-w-0">
+                        <h1 className="text-xl sm:text-[24px] font-bold leading-tight text-white truncate">
                             Manage Menu
                         </h1>
-                        <p className="text-[14px] font-bold text-white/70">
+                        <p className="text-xs sm:text-[14px] font-medium text-white/70 truncate">
                             Create, update, disable, and organize categories and products
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="hidden sm:flex rounded-full border border-white/10 bg-white/10 px-4 py-2 text-[14px] font-bold">
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                    <div className="hidden sm:flex rounded-full border border-white/10 bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-[14px] font-bold">
                         Total Items: {totalItems}
                     </div>
-                    <div className="hidden md:flex rounded-full border border-white/10 bg-white/10 px-4 py-2 text-[14px] font-bold">
+                    <div className="hidden md:flex rounded-full border border-white/10 bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-[14px] font-bold">
                         Active Categories: {activeCategoriesCount}
                     </div>
                     <ProfileDropdown />
                 </div>
             </header>
 
-            <main className="px-6 pb-6 pt-[96px]">
+            <main className="px-4 sm:px-6 pb-6 pt-4 sm:pt-6">
                 <div className="mx-auto max-w-7xl py-6">
                     <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div className="rounded-2xl border border-[#ded9d3] bg-white p-5 shadow-sm">

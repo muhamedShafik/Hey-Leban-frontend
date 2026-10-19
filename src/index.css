@@ -35,6 +35,64 @@ body {
 
 #root {
   min-height: 100%;
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* ── PWA Standalone Mode — Disable Zoom & Bounce without breaking fixed headers ── */
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  html,
+  body {
+    overscroll-behavior: none !important;
+    touch-action: pan-x pan-y;
+  }
+
+  body {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Prevent iOS auto-zoom on input focus */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* Disable double-tap zoom on buttons and interactive elements */
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+}
+
+html.pwa-mode,
+html.pwa-mode body {
+  overscroll-behavior: none !important;
+  touch-action: pan-x pan-y;
+}
+
+html.pwa-mode body {
+  padding-top: env(safe-area-inset-top);
+}
+
+html.pwa-mode input,
+html.pwa-mode textarea,
+html.pwa-mode select {
+  font-size: 16px !important;
+}
+
+html.pwa-mode button,
+html.pwa-mode a,
+html.pwa-mode input,
+html.pwa-mode select,
+html.pwa-mode textarea,
+html.pwa-mode [role="button"] {
+  touch-action: manipulation;
 }
 
 * {

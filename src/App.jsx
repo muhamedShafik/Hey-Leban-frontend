@@ -1,6 +1,7 @@
 import AppRouter from "./router/AppRouter";
-import { useEffect , useRef} from "react";
+import { useEffect, useRef } from "react";
 import { useAuthStore } from "./store/authStore";
+import PWAUpdatePrompt from "./components/PWAUpdatePrompt";
 
 function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
@@ -13,7 +14,12 @@ function App() {
     initializeAuth();
   }, [initializeAuth]);
 
-  return <AppRouter />;
+  return (
+    <>
+      <AppRouter />
+      <PWAUpdatePrompt />
+    </>
+  );
 }
 
 export default App;
