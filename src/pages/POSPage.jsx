@@ -18,6 +18,7 @@ import { printBoth, printBill, printKOT } from "../utils/printHelpers";
 import { useInventoryQuery } from "../hooks/inventory/useInventoryQuery";
 import { useRawMaterialsQuery } from "../hooks/rawMaterials/useRawMaterialsQuery";
 import ProfileDropdown from "../components/layout/ProfileDropdown";
+import { useAuthStore } from "../store/authStore";
 
 const formatMoney = (value) => {
   const numeric = Number(value || 0);
@@ -118,6 +119,7 @@ const CartItemCard = memo(({ item, onIncrease, onDecrease, stockCount }) => {
 
 function POSPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [toast, setToast] = useState(null);
 
@@ -132,6 +134,9 @@ function POSPage() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [lastSavedOrder, setLastSavedOrder] = useState(null);
 
+  // Track active user for account-switch reset
+  const activeUserId = useAuthStore((state) => state.user?.id);
+
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -145,7 +150,7 @@ function POSPage() {
   const todaySession = useSessionStore((state) => state.todaySession);
   const isSessionChecked = useSessionStore((state) => state.isSessionChecked);
   const fetchTodaySession = useSessionStore((state) => state.fetchTodaySession);
-  const isSessionOpen = todaySession?.status === "OPEN";
+  const isSessionOpen = todaySession?.status?.toUpperCase() === "OPEN";
   const discountAmount = useCartStore((state) => state.discountAmount);
   const setDiscountAmount = useCartStore((state) => state.setDiscountAmount);
 
@@ -228,12 +233,31 @@ function POSPage() {
   }, [categories, selectedCategoryId]);
 
 
-  // Fetch session on mount if it hasn't been checked yet (e.g. after login)
+  // ── Account-switch guard ────────────────────────────────────────────────────
+  // When the logged-in user changes (account switch), hard-reset all local
+  // per-order state so that no data from the previous account leaks through.
+  const prevUserIdRef = useRef(activeUserId);
   useEffect(() => {
-    if (!isSessionChecked) {
-      fetchTodaySession();
+    if (prevUserIdRef.current !== undefined && prevUserIdRef.current !== activeUserId) {
+      // User actually changed — wipe in-flight order state
+      setLastSavedOrder(null);
+      setLastKot(null);
+      setIsCartDirty(false);
+      setSaveLoading(false);
+      setKotLoading(false);
+      setBillLoading(false);
+      setBothLoading(false);
+      setToast(null);
+      // Also clear the TanStack query cache so stale data from old account doesn't show
+      queryClient.clear();
     }
-  }, [isSessionChecked, fetchTodaySession]);
+    prevUserIdRef.current = activeUserId;
+  }, [activeUserId]);
+
+  // Fetch session on mount to ensure fresh status
+  useEffect(() => {
+    fetchTodaySession();
+  }, [fetchTodaySession]);
 
   useEffect(() => {
     if (!toast) return;
@@ -695,7 +719,6 @@ function POSPage() {
     navigate(`/orders?${params.toString()}`);
   };
 
-  const queryClient = useQueryClient();
 
   const goToOrdersPage = () => {
     const params = new URLSearchParams({
@@ -904,6 +927,9 @@ function POSPage() {
               title="Close sale session"
               className="hidden md:inline-flex rounded-lg border border-white/30 px-2.5 sm:px-3 py-1.5 text-xs font-bold text-white transition-all hover:bg-white/10 shrink-0"
             >
+              {isSessionOpen && (
+                <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse"></span>
+              )}
               Close Sale
             </button>
 
@@ -952,22 +978,20 @@ function POSPage() {
 
               <h2 className="text-xl font-bold mb-8">Menu</h2>
 
-              <div className="flex flex-col gap-5">
-                <button
-                  type="button"
-                  disabled={isSessionOpen}
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    if (shouldClearCartOnLeave()) resetCurrentOrderFlow();
-                    navigate("/open-sales");
-                  }}
-                  className={`w-full rounded-xl px-4 py-2.5 font-extrabold text-center text-sm transition-all ${isSessionOpen
-                    ? "bg-white/5 text-white/40 cursor-not-allowed border border-white/10"
-                    : "bg-[#feb234] hover:bg-[#e8a020] text-[#3d0c02] shadow-sm active:scale-95"
-                    }`}
-                >
-                  {isSessionOpen ? "Open Sale Session" : "+ Open Sale Session"}
-                </button>
+              <div className="flex flex-col gap-4">
+                {!isSessionOpen && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      if (shouldClearCartOnLeave()) resetCurrentOrderFlow();
+                      navigate("/open-sales");
+                    }}
+                    className="w-full rounded-xl bg-[#feb234] hover:bg-[#e8a020] text-[#3d0c02] px-4 py-2.5 font-extrabold text-center text-sm shadow-sm transition-all active:scale-95"
+                  >
+                    + Open Sale Session
+                  </button>
+                )}
 
                 {isSessionOpen && todaySession?.openingCash !== undefined && (
                   <div className="rounded-lg border border-amber-400/30 bg-amber-400/10 p-2.5 text-xs font-bold text-amber-200">
@@ -998,9 +1022,14 @@ function POSPage() {
                     if (shouldClearCartOnLeave()) resetCurrentOrderFlow();
                     navigate("/close-sales");
                   }}
-                  className="rounded-xl border border-white/30 px-4 py-3 font-bold text-left text-sm text-white"
+                  className={`rounded-xl px-4 py-3 font-bold text-left text-sm transition flex items-center justify-between ${
+                    isSessionOpen
+                      ? "bg-red-600 hover:bg-red-700 text-white shadow-sm"
+                      : "border border-white/30 text-white hover:bg-white/10"
+                  }`}
                 >
-                  Close Sale
+                  <span>Close Sale</span>
+                  <span>🔒</span>
                 </button>
 
                 <div className="h-px bg-white/10 w-full" />
@@ -1019,9 +1048,9 @@ function POSPage() {
           </div>
         )}
 
-        <main className="flex flex-1 flex-col lg:flex-row lg:overflow-hidden">
+        <main className="flex flex-1 flex-col md:flex-row md:overflow-hidden">
           {/* ── Left: Product catalogue ── */}
-          <section className="flex w-full lg:w-[60%] flex-col border-b lg:border-b-0 lg:border-r border-[#ded9d3] overflow-hidden">
+          <section className="flex w-full md:w-[58%] lg:w-[60%] flex-col border-b md:border-b-0 md:border-r border-[#ded9d3] overflow-hidden">
             <div className="border-b border-[#ded9d3] bg-white/50 p-3 lg:p-4 shrink-0 flex items-center gap-3">
               <div className="flex-1">
                 <input
@@ -1065,7 +1094,7 @@ function POSPage() {
 
             <div
               key={animKey}
-              className={`grid flex-1 grid-cols-2 md:grid-cols-3 content-start gap-4 lg:gap-6 overflow-y-auto p-4 lg:p-6 min-h-[50vh] lg:min-h-0 ${slideDirection === "left" ? "animate-slide-left" : "animate-slide-right"
+              className={`grid flex-1 grid-cols-2 lg:grid-cols-3 content-start gap-3 md:gap-4 lg:gap-6 overflow-y-auto p-3 md:p-4 lg:p-6 min-h-[50vh] md:min-h-0 ${slideDirection === "left" ? "animate-slide-left" : "animate-slide-right"
                 }`}
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
@@ -1117,7 +1146,7 @@ function POSPage() {
           </section>
 
           {/* ── Right: Cart ── */}
-          <section className="flex w-full lg:w-[40%] flex-col bg-white min-h-[50vh] lg:min-h-0">
+          <section className="flex w-full md:w-[42%] lg:w-[40%] flex-col bg-white min-h-[50vh] md:min-h-0 overflow-hidden">
             {/* Order type tabs */}
             <div className="border-b border-[#ded9d3] bg-[#f8f3ec]/50 p-3">
               <div className="flex items-center overflow-hidden rounded-xl border border-[#ded9d3] bg-white">
