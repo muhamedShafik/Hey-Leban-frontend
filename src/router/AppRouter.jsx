@@ -1,6 +1,8 @@
 // src/router/AppRouter.jsx
 import { Navigate, Route, Routes } from "react-router-dom";
 import LoginPage from "../pages/LoginPage";
+import ForgotPasswordPage from "../pages/ForgotPasswordPage";
+import ResetPasswordPage from "../pages/ResetPasswordPage";
 import POSPage from "../pages/POSPage";
 import OpenSalesPage from "../pages/OpenSalesPage";
 import CloseSalesPage from "../pages/CloseSalesPage";
@@ -48,6 +50,9 @@ function AppRouter() {
     <Routes>
       <Route path="/" element={<RootRedirect />} />
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/reset-password/:tokenParam" element={<ResetPasswordPage />} />
 
 
       <Route

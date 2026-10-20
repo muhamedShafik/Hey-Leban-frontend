@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "fetch-icon": "node scripts/fetch-icon.mjs",
+    "prebuild": "node scripts/fetch-icon.mjs",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

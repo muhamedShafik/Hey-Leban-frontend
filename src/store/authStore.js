@@ -32,6 +32,21 @@ export const useAuthStore = create((set, get) => ({
   isAuthLoading: true,
 
   initializeAuth: async () => {
+    const isPublicAuthPage =
+      window.location.pathname.startsWith("/reset-password") ||
+      window.location.pathname.startsWith("/forgot-password");
+
+    if (isPublicAuthPage) {
+      window.accessToken = null;
+      set({
+        user: null,
+        shop: null,
+        isAuthenticated: false,
+        isAuthLoading: false,
+      });
+      return;
+    }
+
     try {
       const response = await api.post("/api/auth/refresh", {});
       const { accessToken, user } = response.data.data;
