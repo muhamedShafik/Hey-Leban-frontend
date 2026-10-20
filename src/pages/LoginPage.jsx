@@ -1,6 +1,5 @@
-// src/pages/LoginPage.jsx
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 
 function LoginPage() {
@@ -114,13 +113,22 @@ function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className={`h-12 rounded-xl text-sm font-bold text-white ${
+            className={`h-12 rounded-xl text-sm font-bold text-white transition hover:brightness-105 active:scale-[0.99] ${
               loading ? "cursor-not-allowed bg-gray-300" : "bg-[#E8A020]"
             }`}
           >
             {loading ? "Signing in..." : "Login"}
           </button>
         </form>
+
+        <div className="mt-5 text-center">
+          <Link
+            to="/forgot-password"
+            className="text-sm font-medium text-[#54433f] hover:text-[#3d0c02] hover:underline transition"
+          >
+            Forgot password?
+          </Link>
+        </div>
       </div>
     </div>
   );

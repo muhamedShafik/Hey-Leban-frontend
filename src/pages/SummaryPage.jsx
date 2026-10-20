@@ -9,6 +9,8 @@ import useReportOrdersQuery from "../hooks/reports/useReportOrdersQuery";
 import { getReportDateDetails } from "../utils/dateUtils";
 import ProfileDropdown from "../components/layout/ProfileDropdown";
 import { exportSummaryPdf } from "../utils/pdfExport";
+import { fetchCatalogue } from "../services/catalogueService";
+import { getSalesSessionOverview } from "../services/salesSessionService";
 
 // ── Money formatter ────────────────────────────────────────────────────────────
 const fmt = (v) => {
@@ -256,7 +258,18 @@ export default function SummaryPage() {
   const dateParam = queryParams.get("date");
 
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const [isExporting, setIsExporting] = useState(false);
+
+  const summaryParams = useMemo(() => {
+    if (sessionId) {
+      return { sessionId };
+    }
+    const todayStr = new Date().toISOString().split("T")[0];
+    const sDate = startDate || todayStr;
+    const eDate = endDate || startDate || todayStr;
+    return { startDate: sDate, endDate: eDate };
+  }, [sessionId, startDate, endDate]);
 
   const {
     data: summaryData,
@@ -265,9 +278,16 @@ export default function SummaryPage() {
     error: summaryQueryError,
   } = useSalesSummaryQuery(summaryParams);
 
-  const filterForOrders = sessionId
-    ? { sessionId }
-    : { startDate, endDate, type: "custom" };
+  const filterForOrders = useMemo(() => {
+    if (sessionId) {
+      return { sessionId };
+    }
+    return {
+      startDate: summaryParams.startDate,
+      endDate: summaryParams.endDate,
+      type: "custom",
+    };
+  }, [sessionId, summaryParams]);
 
   // Paginated orders for the orders table
   const {
@@ -353,8 +373,8 @@ export default function SummaryPage() {
 
   const dateDetails = getReportDateDetails({
     sessionId,
-    startDate,
-    endDate,
+    startDate: summaryParams.startDate,
+    endDate: summaryParams.endDate,
     dateParam,
     sessionObj: summaryData?.session,
     fallbackDate: orderRows[0]?.orderTime,

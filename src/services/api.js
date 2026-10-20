@@ -28,7 +28,12 @@ const refreshClient = axios.create({
 
 
 api.interceptors.request.use((config) => {
-  if (window.accessToken) {
+  const isAuthEndpoint =
+    config.url?.includes("/api/auth/login") ||
+    config.url?.includes("/api/auth/reset") ||
+    config.url?.includes("/api/auth/refresh");
+
+  if (window.accessToken && !isAuthEndpoint) {
     config.headers.Authorization = `Bearer ${window.accessToken}`;
   }
   return config;
@@ -88,18 +93,20 @@ api.interceptors.response.use(
     const status = error?.response?.status;
     const message = error?.response?.data?.message || "";
     
+    if (
+      originalRequest?.url?.includes("/api/auth/login") ||
+      originalRequest?.url?.includes("/api/auth/reset") ||
+      originalRequest?.url?.includes("/api/auth/refresh")
+    ) {
+      return Promise.reject(error);
+    }
+
     const isTokenExpired = 
       status === 401 || 
       message.toLowerCase().includes("jwt expired") ||
       message.toLowerCase().includes("token expired");
 
     if (!isTokenExpired || originalRequest?._retry) {
-      return Promise.reject(error);
-    }
-
-
-    if (originalRequest?.url?.includes("/api/auth/refresh")) {
-      window.accessToken = null;
       return Promise.reject(error);
     }
 
@@ -137,7 +144,12 @@ api.interceptors.response.use(
       useAuthStore.getState().clearAuth();
 
 
-      if (window.location.pathname !== "/login") {
+      const isPublicRoute =
+        window.location.pathname === "/login" ||
+        window.location.pathname.startsWith("/reset-password") ||
+        window.location.pathname.startsWith("/forgot-password");
+
+      if (!isPublicRoute) {
         window.location.href = "/login";
       }
 
