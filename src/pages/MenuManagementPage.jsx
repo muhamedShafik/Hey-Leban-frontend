@@ -461,7 +461,7 @@ function MenuManagementPage() {
                 <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                     <button
                         type="button"
-                        onClick={() => navigate("/settings")}
+                        onClick={() => navigate("/pos")}
                         className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full transition hover:bg-white/10 active:scale-95"
                         aria-label="Back to Settings"
                     >

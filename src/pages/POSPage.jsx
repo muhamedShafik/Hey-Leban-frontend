@@ -19,6 +19,7 @@ import { useInventoryQuery } from "../hooks/inventory/useInventoryQuery";
 import { useRawMaterialsQuery } from "../hooks/rawMaterials/useRawMaterialsQuery";
 import ProfileDropdown from "../components/layout/ProfileDropdown";
 import { useAuthStore } from "../store/authStore";
+import { SettingsRail, SettingsTiles } from "../components/layout/SettingsRail";
 
 const formatMoney = (value) => {
   const numeric = Number(value || 0);
@@ -143,6 +144,31 @@ function POSPage() {
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isRailOpen, setIsRailOpen] = useState(false);
+  const [isMenuHint, setIsMenuHint] = useState(false);
+
+  // Auto-hide the settings rail 5 seconds after it opens
+  useEffect(() => {
+    if (!isRailOpen) return;
+    const t = setTimeout(() => setIsRailOpen(false), 5000);
+    return () => clearTimeout(t);
+  }, [isRailOpen]);
+
+  // Triggered by the old Settings button: open the rail and blink the menu button
+  useEffect(() => {
+    let timer;
+    const onHint = () => {
+      setIsRailOpen(false); // opens only when the user clicks the menu button
+      setIsMenuHint(true);
+      clearTimeout(timer);
+      timer = setTimeout(() => setIsMenuHint(false), 4000);
+    };
+    window.addEventListener("hint-settings-menu", onHint);
+    return () => {
+      window.removeEventListener("hint-settings-menu", onHint);
+      clearTimeout(timer);
+    };
+  }, []);
 
   const [showDiscountEditor, setShowDiscountEditor] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
@@ -825,6 +851,37 @@ function POSPage() {
               </svg>
             </button>
 
+            {/* Tablet/Desktop: toggle settings icon rail */}
+            <div className="relative hidden md:block shrink-0">
+              <button
+                type="button"
+                id="toggle-settings-rail"
+                onClick={() => {
+                  setIsMenuHint(false);
+                  setIsRailOpen((v) => !v);
+                }}
+                className={`flex h-9 w-9 -ml-1 items-center justify-center rounded-lg transition ${isMenuHint ? "animate-pulse bg-[#feb234] text-[#3d0c02] ring-4 ring-[#feb234]/60" : isRailOpen ? "bg-white/15 text-white" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
+                aria-label={isRailOpen ? "Hide menu" : "Show menu"}
+                aria-expanded={isRailOpen}
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+
+              {isMenuHint && (
+                <div
+                  role="tooltip"
+                  className="absolute left-0 top-full z-[100] mt-3 w-56 animate-bounce"
+                >
+                  <div className="ml-2 h-0 w-0 border-x-[8px] border-b-[10px] border-x-transparent border-b-[#feb234]" />
+                  <div className="rounded-2xl bg-[#feb234] px-4 py-3 text-sm font-bold leading-snug text-[#3d0c02] shadow-xl">
+                    Settings moved here. Tap the menu button to open it.
+                  </div>
+                </div>
+              )}
+            </div>
+
             <span className="hidden xl:inline border-l border-white/20 pl-3 text-xs opacity-60 shrink-0">
               {todaySession?.date
                 ? new Date(todaySession.date).toLocaleDateString()
@@ -1034,7 +1091,15 @@ function POSPage() {
 
                 <div className="h-px bg-white/10 w-full" />
 
-              
+                <SettingsTiles
+                  onNavigate={(path) => {
+                    setIsMobileMenuOpen(false);
+                    if (shouldClearCartOnLeave()) resetCurrentOrderFlow();
+                    navigate(path);
+                  }}
+                />
+
+                <div className="h-px bg-white/10 w-full" />
 
                 <button
                   type="button"
@@ -1048,7 +1113,15 @@ function POSPage() {
           </div>
         )}
 
-        <main className="flex flex-1 flex-col md:flex-row md:overflow-hidden">
+        <div className="flex flex-1 md:overflow-hidden">
+        <SettingsRail
+          open={isRailOpen}
+          onNavigate={(path) => {
+            if (shouldClearCartOnLeave()) resetCurrentOrderFlow();
+            navigate(path);
+          }}
+        />
+        <main className="flex min-w-0 flex-1 flex-col md:flex-row md:overflow-hidden">
           {/* ── Left: Product catalogue ── */}
           <section className="flex w-full md:w-[58%] lg:w-[60%] flex-col border-b md:border-b-0 md:border-r border-[#ded9d3] overflow-hidden">
             <div className="border-b border-[#ded9d3] bg-white/50 p-3 lg:p-4 shrink-0 flex items-center gap-3">
@@ -1443,6 +1516,7 @@ function POSPage() {
             </div>
           </section>
         </main>
+        </div>
 
 
 

@@ -62,7 +62,7 @@ export default function SalesSessionsPage() {
         <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() => navigate("/settings")}
+            onClick={() => navigate("/pos")}
             className="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-black/5"
             aria-label="Back to Settings"
           >

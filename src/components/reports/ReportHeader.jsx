@@ -32,7 +32,7 @@ export default function ReportHeader({
       <div className="flex items-center gap-4">
         <button
           type="button"
-          onClick={() => navigate("/settings")}
+          onClick={() => navigate("/pos")}
           className="flex h-12 w-12 items-center justify-center rounded-full transition hover:bg-white/10"
           aria-label="Back to Settings"
         >
