@@ -160,7 +160,7 @@ export default function BusinessReportPage() {
     <div className="min-h-screen bg-[#fef9f2] font-sans text-[#1d1c18]">
       <header className="sticky top-0 w-full z-50 bg-[#0e0100] dark:bg-[#3d0c02] text-white dark:text-[#bf715c] font-sans font-bold shadow-md shadow-[0_4px_8px_-2px_rgba(61,12,2,0.08)] flex justify-between items-center px-4 sm:px-6 py-3 min-h-[56px] sm:min-h-[64px]">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-          <button onClick={() => navigate(-1)} className="hover:opacity-80 shrink-0 text-sm sm:text-base">← Back</button>
+          <button onClick={() => navigate("/pos")} className="hover:opacity-80 shrink-0 text-sm sm:text-base">← Back</button>
           <div className="flex flex-col min-w-0">
             <h1 className="text-base sm:text-lg font-bold text-white uppercase tracking-wider truncate">Business Report</h1>
             <p className="text-[11px] sm:text-[12px] font-semibold text-white/80 normal-case tracking-normal flex items-center gap-1.5 mt-0.5 truncate">

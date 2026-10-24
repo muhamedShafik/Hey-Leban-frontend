@@ -291,6 +291,12 @@ export default function ProfileDropdown({ theme = "dark", className = "" }) {
                 type="button"
                 onClick={() => {
                   setIsOpen(false);
+                  // Desktop/tablet on POS: guide users to the new menu button instead
+                  // (remove this block once users have switched over).
+                  if (window.location.pathname === "/pos" && window.innerWidth >= 768) {
+                    window.dispatchEvent(new CustomEvent("hint-settings-menu"));
+                    return;
+                  }
                   navigate("/settings");
                 }}
                 className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-left hover:bg-[#f8f3ec] transition-colors"
